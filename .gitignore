@@ -1,2 +1,5 @@
 /_bmad/
 /.opencode/
+/rules/
+
+.DS_Store
