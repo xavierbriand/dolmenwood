@@ -56,13 +56,16 @@ function getForbiddenTerms(): string[] {
       
       // Extract names from arrays of objects (common pattern in this project)
       if (Array.isArray(data)) {
-        data.forEach((item: any) => {
-          if (item && item.name && typeof item.name === 'string') {
-            terms.add(item.name);
+        data.forEach((item: unknown) => {
+          if (typeof item === 'object' && item !== null && 'name' in item) {
+            const namedItem = item as { name: unknown };
+            if (typeof namedItem.name === 'string') {
+              terms.add(namedItem.name);
+            }
           }
         });
       } else if (typeof data === 'object' && data !== null) {
-        const obj = data as any;
+        const obj = data as { name?: unknown };
         if (obj.name && typeof obj.name === 'string') {
           terms.add(obj.name);
         }
