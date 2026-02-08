@@ -36,11 +36,11 @@ Because the encounter tables and creature statistics are proprietary content of 
     mkdir assets
     ```
 
-2.  Create `assets/creatures.yaml` and `assets/regions.yaml`.
+2.  Populate it with YAML files. You can split data across multiple files (e.g., `creatures.yaml`, `common-tables.yaml`, `regional-tables.yaml`). The system loads all `.yaml` files in the directory.
 
 ### File Formats
 
-**`assets/creatures.yaml`** (List of creatures)
+**Creature Data** (e.g., `assets/creatures.yaml`)
 ```yaml
 - name: Forest Sprite
   level: 1
@@ -57,19 +57,23 @@ Because the encounter tables and creature statistics are proprietary content of 
   description: A small magical creature of the woods.
 ```
 
-**`assets/regions.yaml`** (Encounter tables)
+**Table Data** (e.g., `assets/regions.yaml`)
 ```yaml
-- name: Forest - Day
+# Root regional tables usually follow the naming convention:
+# "Encounter Type - {Time} - {Terrain/Condition}"
+# e.g., "Encounter Type - Daytime - Wild"
+
+- name: Encounter Type - Daytime - Wild
   die: 1d8
   entries:
     - min: 1
       max: 1
       type: Animal
-      ref: Common - Animal # References another table
+      ref: Common - Animal # References a generic table
     - min: 2
       max: 2
-      type: Monster
-      ref: Common - Monster
+      type: Regional
+      ref: Regional # Will look for "Regional - {Region Name}"
 
 - name: Common - Animal
   die: 1d20
@@ -87,11 +91,22 @@ Run the CLI using `pnpm`:
 
 ```bash
 # Syntax
-pnpm --filter @dolmenwood/cli start -- encounter "<Table Name>"
+pnpm --filter @dolmenwood/cli start -- encounter <region_id> [options]
 
-# Example
-pnpm --filter @dolmenwood/cli start -- encounter "Forest - Day"
+# Options:
+#   -t, --time <time>       Time of day: "Day" or "Night" (default: "Day")
+#   --terrain <terrain>     Terrain: "Road" or "Off-road" (default: "Off-road")
+#   -c, --camping           Is the party camping? (flag)
+
+# Example: Generate an encounter for High Wold, at Night, on a Road
+pnpm --filter @dolmenwood/cli start -- encounter "high-wold" --time Night --terrain Road
 ```
+
+### Features
+
+- **Context-Aware Generation**: Takes region, time, terrain, and camping status into account to select the correct tables.
+- **Recursive Lookups**: Automatically resolves generic references (e.g., `Common - Animal`) to localized versions (e.g., `Common - Animal - High Wold`) if they exist.
+- **Full Stat Blocks**: Outputs complete B/X stats for generated creatures.
 
 ## 🛠️ Development
 
