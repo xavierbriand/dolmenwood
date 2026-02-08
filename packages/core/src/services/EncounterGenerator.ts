@@ -88,7 +88,7 @@ export class EncounterGenerator {
   }
 
   private formatRegionName(regionId: string): string {
-    // "high-wold" -> "High Wold"
+    // "generic-forest" -> "Generic Forest"
     return regionId
       .split('-')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))

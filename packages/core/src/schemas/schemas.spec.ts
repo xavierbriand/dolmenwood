@@ -47,7 +47,7 @@ describe('Encounter Schemas', () => {
 describe('Table Schemas', () => {
   it('should validate a correct region table structure', () => {
     const validTable = {
-        name: "High Wold",
+        name: "Generic Forest",
         die: "1d6",
         entries: [
             { min: 1, max: 2, type: "Creature", ref: "Goblin" },
@@ -60,7 +60,7 @@ describe('Table Schemas', () => {
 
   it('should reject invalid region table (missing entries)', () => {
       const invalidTable = {
-          name: "High Wold",
+          name: "Generic Forest",
           die: "1d6",
           // entries missing
       };

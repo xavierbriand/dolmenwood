@@ -38,13 +38,13 @@ describe('EncounterGenerator Integration', () => {
     };
 
     const mockRegionalTable: Table = {
-      name: 'Regional - High Wold',
+      name: 'Regional - Generic Forest',
       die: '1d20',
-      entries: [{ min: 1, max: 20, type: 'Creature', ref: 'Mossling' }]
+      entries: [{ min: 1, max: 20, type: 'Creature', ref: 'Goblin' }]
     };
 
     const mockMossling: Creature = {
-      name: 'Mossling',
+      name: 'Goblin',
       level: 1,
       alignment: 'Neutral',
       xp: 10,
@@ -72,7 +72,7 @@ describe('EncounterGenerator Integration', () => {
     // 2. Setup Mock Behavior
     repository.getTable.mockImplementation((name) => {
       if (name === 'Encounter Type - Daytime - Wild') return Promise.resolve(success(mockEncounterTypeTable));
-      if (name === 'Regional - High Wold') return Promise.resolve(success(mockRegionalTable));
+      if (name === 'Regional - Generic Forest') return Promise.resolve(success(mockRegionalTable));
       if (name === 'Activity') return Promise.resolve(success(mockActivityTable));
       if (name === 'Reaction') return Promise.resolve(success(mockReactionTable));
       return Promise.reject(new Error(`Unknown table: ${name}`));
@@ -92,7 +92,7 @@ describe('EncounterGenerator Integration', () => {
 
     // 3. Execute
     const context = {
-      regionId: 'high-wold',
+      regionId: 'generic-forest',
       timeOfDay: 'Day' as const,
       terrain: 'Off-road' as const,
       camping: false
@@ -106,7 +106,7 @@ describe('EncounterGenerator Integration', () => {
       const encounter = result.data;
       expect(encounter.type).toBe('Creature');
       if (encounter.details.creature) {
-        expect(encounter.details.creature.name).toBe('Mossling');
+        expect(encounter.details.creature.name).toBe('Goblin');
       } else {
         throw new Error('Expected creature details to be present');
       }

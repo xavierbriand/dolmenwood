@@ -40,7 +40,7 @@ const IGNORE_PREFIXES = [
   'Common -',
   'Regional -' 
   // Note: We might want to protect specific Region names, but "Regional - " itself is generic.
-  // The logic below handles this: if we split by "-", "High Wold" becomes a candidate.
+  // The logic below handles this: if we split by "-", "Generic Forest" becomes a candidate.
 ];
 
 interface Denylist {
