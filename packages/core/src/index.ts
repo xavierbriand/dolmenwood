@@ -1,5 +1,5 @@
 export function coreHello(): string {
-  return "Hello from Core";
+  return 'Hello from Core';
 }
 
 export * from './schemas/encounter.js';
@@ -12,3 +12,6 @@ export * from './utils/Result.js';
 export * from './engine/Dice.js';
 export * from './engine/TableRoller.js';
 export * from './services/EncounterGenerator.js';
+export * from './services/SessionService.js';
+export * from './schemas/session.js';
+export * from './ports/SessionRepository.js';

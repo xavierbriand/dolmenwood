@@ -6,3 +6,4 @@ export function dataHello(): string {
 
 export * from './repositories/YamlTableRepository.js';
 export * from './repositories/YamlCreatureRepository.js';
+export * from './repositories/JsonSessionRepository.js';
