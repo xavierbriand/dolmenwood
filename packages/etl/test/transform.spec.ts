@@ -1,7 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { parseCreatures } from '../src/steps/transform.js';
 
-const SAMPLE_TEXT_GHOST = `
+
+
+
+describe('transform', () => {
+  it('should parse a creature from the Bestiary section', () => {
+    const SAMPLE_TEXT_GHOST = `
 1d6 hours. Generic preamble text.
 Names: 1. Name1, 2. Name2.
 
@@ -35,15 +40,36 @@ Mini Fairy
 Small flying creature.
 Part Three Appendices
 `;
+    const creatures = parseCreatures(SAMPLE_TEXT_GHOST);
 
-const SAMPLE_TEXT_KNIGHT = `
+    // It should find 2 creatures: Generic Ghost and Mini Fairy
+    expect(creatures.length).toBeGreaterThanOrEqual(1);
+
+    const ghost = creatures.find((c) => c.name === 'Generic Ghost');
+    expect(ghost).toBeDefined();
+
+    if (ghost) {
+      expect(ghost.name).toBe('Generic Ghost');
+      expect(ghost.level).toBe(5);
+      expect(ghost.alignment).toBe('Chaotic');
+      expect(ghost.xp).toBe(500);
+      expect(ghost.armourClass).toBe(15);
+      expect(ghost.hitDice).toBe('4d8');
+      expect(ghost.attacks).toEqual(['Touch (+4, 1d6 + drain)']);
+      expect(ghost.movement).toBe('40 Fly 80');
+      expect(ghost.morale).toBe(10);
+    }
+  });
+
+  it('should parse another creature from the Bestiary section', () => {
+    const SAMPLE_TEXT_KNIGHT = `
 Names: See Generic Kindred, DPB and Faction.
 
 part two | Bestiary
 38
 Generic Knight
-Haughty warriors in the service of a noble. Lithe of frame, exquisitely preened, and Haughty warriors in the service of a noble. Lithe of frame, exquisitely preened, and
-heavily armed. Roam the world on quests of derring-do or romance.heavily armed. Roam the world on quests of derring-do or romance.
+Generic description text. Generic description text.
+Generic description text. Generic description text.
 MeDiuM human—sentient—any alignMent
 Level 4 AC 17 HP 4d8 (18) Saves D10 R11 H12 B13 S14
 Attacks Longsword (+5, 1d8+2)  
@@ -89,17 +115,14 @@ IN THE SERVICE OF
 10Regent Stone.
 ENCOUNTERS
 1Gazing at a fallen leaf, composing an ode to the wondrous 
-and tragic beauty of mortality.
 2In battle with 1d3 goblins (p114), attempt-
-ing to restrain the beasts with chains.
+ing stuff
 3Performing 
 MAGIC SWORDS
 1Floral. Leaves a trail of ephemeral blossoms when swung.
 2Celestial. Reflects the stars and moon, even during the 
-day or when the heavens are obscured by clouds.
 3Hair’s breadth. Blade has no thickness.
 4Perfumed. Produces subtle wafts of rose scent in the 
-presence of Lawful beings.
 Names: See Kindred, DPB and Faction, DCB. See also: Nobles and Their Dominions, DCB.
 
 part two | Bestiary
@@ -107,30 +130,6 @@ part two | Bestiary
 Wanderer
 `;
 
-describe('transform', () => {
-  it('should parse a creature from the Bestiary section', () => {
-    const creatures = parseCreatures(SAMPLE_TEXT_GHOST);
-
-    // It should find 2 creatures: Generic Ghost and Mini Fairy
-    expect(creatures.length).toBeGreaterThanOrEqual(1);
-
-    const ghost = creatures.find((c) => c.name === 'Generic Ghost');
-    expect(ghost).toBeDefined();
-
-    if (ghost) {
-      expect(ghost.name).toBe('Generic Ghost');
-      expect(ghost.level).toBe(5);
-      expect(ghost.alignment).toBe('Chaotic');
-      expect(ghost.xp).toBe(500);
-      expect(ghost.armourClass).toBe(15);
-      expect(ghost.hitDice).toBe('4d8');
-      expect(ghost.attacks).toEqual(['Touch (+4, 1d6 + drain)']);
-      expect(ghost.movement).toBe('40 Fly 80');
-      expect(ghost.morale).toBe(10);
-    }
-  });
-
-  it('should parse another creature from the Bestiary section', () => {
     const creatures = parseCreatures(SAMPLE_TEXT_KNIGHT);
 
     const knight = creatures.find((c) => c.name === 'Generic Knight');
@@ -148,6 +147,48 @@ describe('transform', () => {
       ]);
       expect(knight.movement).toBe(20);
       expect(knight.morale).toBe(9);
+    }
+  });
+
+  it('should parse creatures with abbreviated stats and inline values (Problem Case)', () => {
+    const SAMPLE_TEXT_PROBLEM = `
+part two | Bestiary
+99
+Generic Unique Entity
+MeDiuM Mortal—sentient—any alignMent
+Level 4 AC 13 HP 4d8 (18) Saves D10 R11 H12 B13 S14 
+Att Staff (+3, 1d4) Speed 50 Morale 8 XP 180
+Hold: May cast the holy spell Hold Person once per day.
+Other traits: As per standard entity.
+Names: 1. NameOne, 2. NameTwo.
+
+Aquatic Fey
+Aquatic stuff.
+MeDiuM DeMi-fey—sentient—any alignMent
+Level 2 AC 12 HP 2d8 (9) Saves D12 R13 H14 B15 S16
+Attacks Trident (+1, 1d6) or horns (+1, 1d4)
+Swim 40 Morale 8 XP 20
+Encounters 2d6 (10% in lair)
+part three
+`;
+    const creatures = parseCreatures(SAMPLE_TEXT_PROBLEM);
+
+    const entity = creatures.find((c) => c.name === 'Generic Unique Entity');
+    expect(entity).toBeDefined();
+    if (entity) {
+      expect(entity.attacks?.[0]).toContain('Staff (+3, 1d4)');
+      expect(entity.movement).toBe(50);
+      expect(entity.morale).toBe(8);
+      expect(entity.xp).toBe(180);
+      // Verify default number appearing
+      expect(entity.numberAppearing).toBe('1 (Unique)');
+    }
+
+    const fey = creatures.find((c) => c.name === 'Aquatic Fey');
+    expect(fey).toBeDefined();
+    if (fey) {
+      expect(fey.movement).toBe(40);
+      expect(fey.xp).toBe(20);
     }
   });
 });

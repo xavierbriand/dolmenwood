@@ -1,6 +1,5 @@
 import { Command } from 'commander';
 import fs from 'node:fs/promises';
-import path from 'node:path';
 import { PATHS } from './config.js';
 import { extractText } from './steps/extract.js';
 import { parseCreatures } from './steps/transform.js';
