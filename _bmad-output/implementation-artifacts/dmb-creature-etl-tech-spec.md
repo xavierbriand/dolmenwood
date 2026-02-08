@@ -2,8 +2,8 @@
 title: 'DMB Creature ETL Pipeline'
 slug: 'dmb-creature-etl-pipeline'
 created: '2026-02-08'
-status: 'in-progress'
-stepsCompleted: [1, 2]
+status: 'review'
+stepsCompleted: [1, 2, 3, 4, 5]
 tech_stack:
   - TypeScript
   - Node.js
@@ -98,9 +98,9 @@ packages/etl/
 
 ## Functional Requirements
 
-1.  **CLI Interface**: `pnpm --filter @dolmenwood/etl start [options]`
-    - `--step <extract|transform|load|all>` (Default: all)
-    - `--clean` (Removes intermediate files in `tmp/etl`)
+1.  **CLI Interface**: `pnpm --filter @dolmenwood/etl start <command> [options]`
+    - Commands: `extract`, `transform`, `load`, `all`, `clean`.
+    - `all --clean`: Runs full pipeline, cleaning `tmp/etl` first.
 2.  **Parsing Accuracy**: Matches `CreatureSchema` fields (level, AC, attacks, etc.).
 3.  **Validation**: Pipeline MUST fail if parsed data invalidates the schema.
 

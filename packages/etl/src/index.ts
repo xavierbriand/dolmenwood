@@ -12,6 +12,23 @@ program
   .description('ETL pipeline for Dolmenwood Monster Book')
   .version('0.0.1');
 
+async function cleanTmp() {
+  console.log('Cleaning temporary files...');
+  try {
+    await fs.rm(PATHS.TMP_DIR, { recursive: true, force: true });
+    console.log('✅ Cleaned tmp/etl/');
+  } catch (error) {
+    console.error('Failed to clean:', error);
+  }
+}
+
+program
+  .command('clean')
+  .description('Remove intermediate files in tmp/etl')
+  .action(async () => {
+    await cleanTmp();
+  });
+
 program
   .command('extract')
   .description('Extract text from PDF to raw text file')
@@ -67,8 +84,13 @@ program
 program
   .command('all')
   .description('Run full ETL pipeline')
-  .action(async () => {
+  .option('-c, --clean', 'Clean temporary files before starting')
+  .action(async (options) => {
     try {
+      if (options.clean) {
+        await cleanTmp();
+      }
+
       // 1. Extract
       console.log('Step 1: Extracting...');
       await fs.mkdir(PATHS.TMP_DIR, { recursive: true });
