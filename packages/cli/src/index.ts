@@ -22,9 +22,12 @@ program
 
 program
   .command('encounter')
-  .argument('<table_name>', 'Name of the table to roll on (e.g. "Forest - Day")')
-  .description('Generate a random encounter from a region table')
-  .action(async (tableName) => {
+  .argument('<region_id>', 'ID of the region (e.g. "forest")')
+  .option('-t, --time <time>', 'Time of day (Day or Night)', 'Day')
+  .option('--terrain <terrain>', 'Terrain type (Road or Off-road)', 'Off-road')
+  .option('-c, --camping', 'Is the party camping?', false)
+  .description('Generate a random encounter for a specific region context')
+  .action(async (regionId, options) => {
     try {
       // 1. Setup Dependencies
       const tableRepo = new YamlTableRepository(ASSETS_PATH);
@@ -32,32 +35,68 @@ program
       const random = new DefaultRandomProvider();
       const generator = new EncounterGenerator(tableRepo, creatureRepo, random);
 
-      // 2. Generate
-      console.log(chalk.blue(`Rolling on table: ${chalk.bold(tableName)}...`));
-      const result = await generator.generate(tableName);
+      // 2. Build Context
+      // Validate inputs minimally (zod schema in core handles strict validation)
+      const context = {
+        regionId,
+        timeOfDay: options.time as 'Day' | 'Night',
+        terrain: options.terrain as 'Road' | 'Off-road',
+        camping: !!options.camping
+      };
 
-      // 3. Output
+      console.log(chalk.blue(`Generating encounter for region: ${chalk.bold(regionId)}`));
+      console.log(chalk.dim(`Context: ${options.time}, ${options.terrain}, Camping: ${options.camping}`));
+
+      // 3. Generate
+      const result = await generator.generateEncounter(context);
+
+      // 4. Output
       if (result.kind === 'failure') {
         console.error(chalk.red('Error:'), result.error.message);
         process.exit(1);
       }
 
       const encounter = result.data;
-      console.log(chalk.green('Success!'));
-      console.log('---');
-
-      if (encounter.kind === 'creature') {
-        const c = encounter.creature;
-        console.log(`${chalk.bold.yellow(encounter.count)} x ${chalk.bold.yellow(c.name)}`);
-        console.log(`Stats: AC ${c.armourClass}, HD ${c.hitDice}, MV ${c.movement}`);
-        console.log(`Attacks: ${c.attacks.join(', ')}`);
-        if (c.description) console.log(chalk.italic(c.description));
-      } else {
-        console.log(chalk.bold(encounter.name));
-        console.log(encounter.description);
+      console.log(chalk.green('\nEncounter Generated!'));
+      console.log('==================================================');
+      
+      console.log(`${chalk.bold('Summary:')} ${chalk.white(encounter.summary)}`);
+      console.log(`${chalk.bold('Type:')}    ${encounter.type}`);
+      
+      if (encounter.details.distance) {
+        console.log(`${chalk.bold('Distance:')} ${encounter.details.distance}`);
       }
       
-      console.log('---');
+      if (encounter.details.surprise) {
+        let color = chalk.white;
+        if (encounter.details.surprise.includes('Players surprised')) color = chalk.yellow;
+        if (encounter.details.surprise.includes('Both')) color = chalk.magenta;
+        console.log(`${chalk.bold('Surprise:')} ${color(encounter.details.surprise)}`);
+      }
+
+      if (encounter.details.activity) {
+        console.log(`${chalk.bold('Activity:')} ${encounter.details.activity}`);
+      }
+
+      if (encounter.details.reaction) {
+        console.log(`${chalk.bold('Reaction:')} ${encounter.details.reaction}`);
+      }
+
+      if (encounter.type === 'Creature' && encounter.details.creature) {
+        console.log('--------------------------------------------------');
+        const c = encounter.details.creature;
+        console.log(chalk.bold.cyan(c.name));
+        console.log(`${chalk.dim('Stats:')} AC ${c.armourClass}, HD ${c.hitDice}, MV ${c.movement}, Morale ${c.morale}`);
+        console.log(`${chalk.dim('Attacks:')} ${c.attacks.join(', ')}`);
+        
+        console.log(`${chalk.dim('Align:')} ${c.alignment}  ${chalk.dim('Level:')} ${c.level}  ${chalk.dim('XP:')} ${c.xp}`);
+        
+        if (c.description) {
+            console.log('\n' + chalk.italic(c.description));
+        }
+      }
+
+      console.log('==================================================');
 
     } catch (error) {
       console.error(chalk.red('Unexpected error:'), error);
