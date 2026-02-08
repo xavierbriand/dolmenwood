@@ -3,38 +3,223 @@ import { Creature } from '@dolmenwood/core';
 export function parseCreatures(text: string): Partial<Creature>[] {
   const creatures: Partial<Creature>[] = [];
 
-  // 1. Extract Bestiary Section (Roughly)
-  // We look for "Part Two" and "Part Three" as boundaries
+  // 1. Identify Sections
   const partTwoIndex = text.search(/part two\s*[|:]?\s*bestiary/i);
-  const partThreeIndex = text.search(/part three/i);
+  const partThreeIndex = text.search(/part three/i); // Start of Appendices
 
-  let sectionContent = text;
+  // Bestiary Section
+  let bestiaryText = '';
   if (partTwoIndex !== -1) {
     if (partThreeIndex !== -1 && partThreeIndex > partTwoIndex) {
-      sectionContent = text.substring(partTwoIndex, partThreeIndex);
+      bestiaryText = text.substring(partTwoIndex, partThreeIndex);
     } else {
-      sectionContent = text.substring(partTwoIndex);
+      bestiaryText = text.substring(partTwoIndex);
+    }
+    creatures.push(...parseBestiary(bestiaryText));
+  }
+
+  // Appendices Section
+  if (partThreeIndex !== -1) {
+    const appendicesText = text.substring(partThreeIndex);
+    creatures.push(...parseAppendices(appendicesText));
+  }
+
+  return creatures;
+}
+
+function parseAppendices(text: string): Partial<Creature>[] {
+  const creatures: Partial<Creature>[] = [];
+
+  // Indices for sub-sections
+  const adventurersHeader = /Adventurers\s*$/m;
+  const advPartiesHeader = /Adventuring Parties\s*$/m;
+  const mortalsHeader = /Everyday Mortals\s*$/m;
+  const animalsHeader = /Animals\s*$/m;
+  const rumoursHeader = /Monster Rumours\s*$/m;
+
+  const advIndex = text.search(adventurersHeader);
+  const advPartiesIndex = text.search(advPartiesHeader);
+  const mortalsIndex = text.search(mortalsHeader);
+  const animalsIndex = text.search(animalsHeader);
+  const rumoursIndex = text.search(rumoursHeader);
+
+  // 1. Adventurers
+  if (advIndex !== -1 && advPartiesIndex > advIndex) {
+    const section = text.substring(advIndex, advPartiesIndex);
+    creatures.push(...parseAdventurers(section));
+  }
+
+  // 2. Everyday Mortals
+  if (mortalsIndex !== -1 && animalsIndex > mortalsIndex) {
+    const section = text.substring(mortalsIndex, animalsIndex);
+    creatures.push(...parseEverydayMortals(section));
+  }
+
+  // 3. Animals
+  if (animalsIndex !== -1) {
+    const end = rumoursIndex !== -1 ? rumoursIndex : text.length;
+    if (end > animalsIndex) {
+      const section = text.substring(animalsIndex, end);
+      creatures.push(...parseAnimals(section));
     }
   }
 
-  // 2. Identify Stats Block Pattern
+  return creatures;
+}
+
+function parseAdventurers(text: string): Partial<Creature>[] {
+  const creatures: Partial<Creature>[] = [];
+  const lines = text.split(/\r?\n/);
+
+  // Regex for Level 1 line
+  // e.g., "Level 1 Bard (Rhymer) AC 12 HP..."
+  // Capture group 1: Class Name (e.g. Bard)
+  // We need to be careful matching "Level 1" but not "Level 13" (though unlikely for adventurers here)
+  const level1Regex = /Level\s+1\s+([A-Za-z]+).*?(?:AC|HP)/i;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    const match = line.match(level1Regex);
+
+    if (match) {
+      // We found a Level 1 line. This line typically contains the stats too.
+      // Use the standard stats parser on this line?
+      // The standard parser looks for `Level X AC Y ...`
+      // Our line looks like `Level 1 Bard ... AC ...`
+      // The standard regex `Level\s+([\w]+)\s+AC` expects `Level 5 AC`.
+      // Here we have `Level 1 Class AC`.
+      // So we need to normalize or parse manually.
+
+      const className = match[1];
+      const creature: Partial<Creature> = {
+        name: className,
+        type: 'Mortal',
+        level: 1,
+      };
+
+      // Extract stats from the rest of the line
+      // "Level 1 Bard (Rhymer) AC 6 HP 1d6 (4) Saves D13 W14 P13 B16 S15"
+      // AC capture
+      const acMatch = line.match(/AC\s+(\d+)/);
+      if (acMatch) creature.armourClass = Number(acMatch[1]);
+
+      // HP capture
+      const hpMatch = line.match(/HP\s+([\dd]+)/);
+      if (hpMatch) creature.hitDice = hpMatch[1];
+
+      // Saves capture
+      const saveMatch = line.match(/Saves\s+(.*)$/);
+      if (saveMatch) creature.save = saveMatch[1].trim();
+
+      // Look ahead for Attacks, Speed, etc. similar to standard parser?
+      // Adventurers block in text usually has:
+      // Level 1 ...
+      // Attacks ...
+      // Speed ...
+      // So we can use the look-ahead logic from parseBestiary.
+
+      parseForwardStats(lines, i, creature);
+
+      creatures.push(creature);
+    }
+  }
+  return creatures;
+}
+
+function parseEverydayMortals(text: string): Partial<Creature>[] {
+  const creatures: Partial<Creature>[] = [];
+
+  // 1. Extract the shared "Everyday Mortal" stats.
+  // We can use the standard parser on the whole text, find "Everyday Mortal".
+  const candidates = parseBestiary(text);
+  const template = candidates.find(
+    (c) => c.name === 'Everyday Mortal' || c.name === 'Everyday mortal',
+  );
+
+  if (!template) {
+    // Fallback or error? For now, return empty if template not found.
+    return [];
+  }
+
+  // 2. Find Job Headers.
+  // Jobs are ALL CAPS lines.
+  // Exclude "EVERYDAY MORTAL" if it appears as a header.
+  const lines = text.split(/\r?\n/);
+  const jobRegex = /^[A-Z\s-]+$/; // All caps, spaces, hyphens
+
+  // We need to filter out noise like empty lines or "Level X" lines if they somehow match.
+  // And ignore the stat block headers itself if they are all caps.
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    // Heuristics for a Job Header:
+    // - All Caps
+    // - Not a stat line keyword (AC, HP, XP, etc - though those aren't usually lines on their own)
+    // - Not "EVERYDAY MORTAL" (the template name)
+    // - Length check?
+
+    if (jobRegex.test(trimmed) && trimmed !== 'EVERYDAY MORTAL') {
+      // Exclude lines that are part of the stat block text if any match All Caps (unlikely for description text)
+      // Also exclude headers like "ATTACKS", "TRAITS" if they exist in this section (unlikely).
+      if (['ATTACKS', 'TRAITS', 'NAMES', 'ENCOUNTERS'].includes(trimmed))
+        continue;
+
+      const jobName = toTitleCase(trimmed);
+
+      // Clone template
+      const creature: Partial<Creature> = {
+        ...template,
+        name: jobName,
+        type: 'Mortal',
+      };
+      creatures.push(creature);
+    }
+  }
+
+  return creatures;
+}
+
+function parseAnimals(text: string): Partial<Creature>[] {
+  const creatures = parseBestiary(text);
+
+  // Post-process names: "TEST, BEAST" -> "Test, Beast"
+  return creatures.map((c) => {
+    if (c.name && c.name.includes(',')) {
+      // Check if it looks like "NAME, SUFFIX" (usually all caps in source, but parseBestiary might capture the line as is)
+      // If the source line was "TEST, BEAST", parseBestiary sets name="TEST, BEAST".
+      // We want Title Case.
+      c.name = toTitleCase(c.name);
+    }
+    return c;
+  });
+}
+
+function toTitleCase(str: string): string {
+  return str
+    .toLowerCase()
+    .split(' ')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
+// Re-using the logic from the original parseCreatures, encapsulated
+function parseBestiary(text: string): Partial<Creature>[] {
+  const creatures: Partial<Creature>[] = [];
+  const lines = text.split(/\r?\n/);
+
   // Pattern: Level 6 AC 17 HP 6d8 (27) Saves D9 R10 H11 B12 S13
-  // Security: Avoid ambiguous regex. [\w]+ includes digits.
   const statsLineRegex =
     /Level\s+([\w]+)\s+AC\s+(\d+)\s+HP\s+([\dd]+).*?Saves\s+(.*)/i;
-
-  // We split the text by lines to process linearly or find indices
-  const lines = sectionContent.split(/\r?\n/);
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
     const statsMatch = line.match(statsLineRegex);
 
     if (statsMatch) {
-      // Found a creature anchor!
       const creature: Partial<Creature> = {};
 
-      // Parse Stats Line
       creature.level = isNaN(Number(statsMatch[1]))
         ? statsMatch[1]
         : Number(statsMatch[1]);
@@ -46,8 +231,6 @@ export function parseCreatures(text: string): Partial<Creature>[] {
       let j = i - 1;
       let foundAlignment = false;
 
-      // Heuristic: The line immediately preceding stats is usually Alignment/Type
-      // e.g. "MeDiuM unDeaD—sentient—chaotic"
       while (j >= 0) {
         const prevLine = lines[j].trim();
         if (!prevLine) {
@@ -60,123 +243,35 @@ export function parseCreatures(text: string): Partial<Creature>[] {
           if (creature.alignment) {
             foundAlignment = true;
           }
-          // The line before stats is usually the Type/Alignment line, even if we fail to parse alignment strictly
-          // We assume this line is NOT the name or description start.
         } else {
-          // We are now looking for Name or Description.
-          // The Description is usually between Name and Alignment.
-          // The Name is a short line, usually capitalized.
-
-          // Stop conditions for searching backwards:
-          // - Page number (digits only)
-          // - "Bestiary" header
-          // - "Names:" line
+          // Stop conditions
           if (
             /^\d+$/.test(prevLine) ||
             /part two/i.test(prevLine) ||
-            /Names:/i.test(prevLine)
+            /Names:/i.test(prevLine) ||
+            /Adventurers/i.test(prevLine) || // Stop at section headers if we crossed boundary (unlikely with split)
+            prevLine === 'Everyday Mortals' ||
+            prevLine === 'Animals'
           ) {
             break;
           }
 
-          // Heuristic: Name is usually short (< 50 chars) and doesn't end in punctuation like '.' (unless abbr)
-          // Description lines are usually longer.
+          // Name Heuristic
           if (prevLine.length < 50 && !prevLine.endsWith('.')) {
-            // Likely the Name
             creature.name = prevLine;
-            // If we found the name, we assume description is between Name (j) and Alignment (i-1)
-            // But for now, let's just grab the name and stop going back.
             break;
           }
         }
         j--;
       }
 
-      // Look Forwards for Attacks, Speed, Morale, XP
-      // Expected structure:
-      // Attacks ...
-      // Speed ... Fly ... Morale ... XP ...
-      // Encounters ...
-
-      let k = i + 1;
-      while (k < lines.length && k < i + 10) {
-        // Look ahead ~10 lines
-        const nextLine = lines[k].trim();
-
-        const attacksMatch = nextLine.match(/^(Attacks?|Att)\b/i);
-        if (attacksMatch) {
-          let attacksVal = nextLine.replace(attacksMatch[0], '').trim();
-
-          // Check if this line ALSO contains Speed/Morale/XP
-          // e.g. "Att Staff (+3, 1d4) Speed 50 Morale 8 XP 180"
-          const inlineStats = parseSecondaryStats(nextLine, creature);
-          if (inlineStats) {
-            // If we found stats, we need to cut the attack string short
-            // Find the index where the stats start
-            const statsStartMatch = nextLine.match(
-              /\s+(Speed|Swim|Fly|Burrow|Climb)\b/i,
-            );
-            if (statsStartMatch && statsStartMatch.index) {
-              attacksVal = nextLine
-                .substring(0, statsStartMatch.index)
-                .replace(attacksMatch[0], '')
-                .trim();
-            }
-          }
-
-          // Check if the NEXT line is a continuation
-          // Heuristic: If the next line doesn't start with a known keyword
-          const lookAheadIndex = k + 1;
-          if (lookAheadIndex < lines.length) {
-            const possibleContinuation = lines[lookAheadIndex].trim();
-            // Keywords that start a new line
-            const keywords = [
-              'Speed',
-              'Swim',
-              'Fly',
-              'Burrow',
-              'Climb',
-              'Encounters',
-              'Behaviour',
-              'Speech',
-              'Possessions',
-              'Hoard',
-              'Undead',
-              'Immunities',
-            ];
-            const startsWithKeyword = keywords.some((kw) =>
-              possibleContinuation.startsWith(kw),
-            );
-
-            if (!startsWithKeyword && possibleContinuation.length > 0) {
-              attacksVal += ' ' + possibleContinuation;
-              k++; // Skip processing this line as a new line
-            }
-          }
-          creature.attacks = [attacksVal];
-        }
-
-        // Check for Speed/Movement line (if not already parsed inline)
-        if (
-          !creature.movement &&
-          /^(Speed|Swim|Fly|Burrow|Climb)\b/i.test(nextLine)
-        ) {
-          parseSecondaryStats(nextLine, creature);
-        }
-
-        if (nextLine.startsWith('Encounters')) {
-          creature.numberAppearing = nextLine.replace('Encounters', '').trim();
-        }
-
-        k++;
-      }
-
-      // Default for unique creatures lacking Encounters line
-      if (!creature.numberAppearing) {
-        creature.numberAppearing = '1 (Unique)';
-      }
+      parseForwardStats(lines, i, creature);
 
       if (creature.name) {
+        // Check for specific default logic
+        if (!creature.numberAppearing) {
+          creature.numberAppearing = '1 (Unique)';
+        }
         creatures.push(creature);
       }
     }
@@ -185,38 +280,93 @@ export function parseCreatures(text: string): Partial<Creature>[] {
   return creatures;
 }
 
+// Extracted helper for forward stats parsing (Attacks, Speed, XP, etc)
+function parseForwardStats(
+  lines: string[],
+  currentIndex: number,
+  creature: Partial<Creature>,
+) {
+  let k = currentIndex + 1;
+  while (k < lines.length && k < currentIndex + 10) {
+    const nextLine = lines[k].trim();
+
+    // Stop if we hit a new creature stat block (starts with Level X)
+    if (/^Level\s+\d+/i.test(nextLine)) {
+      break;
+    }
+
+    const attacksMatch = nextLine.match(/^(Attacks?|Att)\b/i);
+    if (attacksMatch) {
+      let attacksVal = nextLine.replace(attacksMatch[0], '').trim();
+
+      const inlineStats = parseSecondaryStats(nextLine, creature);
+      if (inlineStats) {
+        const statsStartMatch = nextLine.match(
+          /\s+(Speed|Swim|Fly|Burrow|Climb)\b/i,
+        );
+        if (statsStartMatch && statsStartMatch.index) {
+          attacksVal = nextLine
+            .substring(0, statsStartMatch.index)
+            .replace(attacksMatch[0], '')
+            .trim();
+        }
+      }
+
+      const lookAheadIndex = k + 1;
+      if (lookAheadIndex < lines.length) {
+        const possibleContinuation = lines[lookAheadIndex].trim();
+        const keywords = [
+          'Speed',
+          'Swim',
+          'Fly',
+          'Burrow',
+          'Climb',
+          'Encounters',
+          'Behaviour',
+          'Speech',
+          'Possessions',
+          'Hoard',
+          'Undead',
+          'Immunities',
+        ];
+        const startsWithKeyword = keywords.some((kw) =>
+          possibleContinuation.startsWith(kw),
+        );
+
+        if (!startsWithKeyword && possibleContinuation.length > 0) {
+          attacksVal += ' ' + possibleContinuation;
+          k++;
+        }
+      }
+      creature.attacks = [attacksVal];
+    }
+
+    if (
+      !creature.movement &&
+      /^(Speed|Swim|Fly|Burrow|Climb)\b/i.test(nextLine)
+    ) {
+      parseSecondaryStats(nextLine, creature);
+    }
+
+    if (nextLine.startsWith('Encounters')) {
+      creature.numberAppearing = nextLine.replace('Encounters', '').trim();
+    }
+
+    k++;
+  }
+}
+
 function parseSecondaryStats(
   line: string,
   creature: Partial<Creature>,
 ): boolean {
   let found = false;
 
-  // Speed 50 Fly 100 Morale 11 XP 1,120
-  // Or: Swim 40 Morale 8 XP 20
-  // Regex to pull these out. We look for Movement keyword ... Morale
-  // Security: Avoid potential ReDoS with non-greedy match on long lines
   const speedMatch = line.match(
     /(?:Speed|Swim|Fly|Burrow|Climb)\s+([\w\s]+?)\s+Morale/i,
   );
   if (speedMatch) {
     const rawMove = speedMatch[1].trim();
-    // If the captured group is just a number, convert to number.
-    // If it's "0 or 20", keep as string.
-    // If it's complex like "50 Fly 100", the regex might capture "50 Fly 100" if greedy enough?
-    // Actually the regex above `(Speed|Swim|Fly|Burrow|Climb)\s+(.*?)\s+Morale` is non-greedy on `.*?` but it stops at Morale.
-    // So "Speed 50 Fly 100 Morale" -> group 2 is "50 Fly 100".
-    // If it's just "Swim 40 Morale" -> group 2 is "40".
-
-    // However, if the line started with "Swim", we might want to include "Swim" in the value if we just return a number/string.
-    // The previous code did: `creature.movement = ...`
-    // If the movement type is not Speed, we should probably preserve the type in the string if possible, or just the value.
-    // The current Zod schema expects string | number.
-    // If it's "Swim 40", and we return 40, we lose "Swim".
-    // But the previous code just took the value.
-    // Let's stick to the value for now, but if it's not starting with Speed, maybe we should prepend?
-    // "Swim 40" -> "40 (Swim)"? Or just "40". The previous logic seemed to just take the number.
-    // Let's just take the value found between the keyword and Morale.
-
     creature.movement = isNaN(Number(rawMove)) ? rawMove : Number(rawMove);
     found = true;
   }
@@ -237,11 +387,8 @@ function parseSecondaryStats(
 }
 
 function parseAlignment(line: string): string | undefined {
-  // "MeDiuM unDeaD—sentient—chaotic"
-  // We want to extract "Chaotic", "Neutral", "Lawful", or "Any"
   const alignMatch = line.match(/(Chaotic|Neutral|Lawful|Any)/i);
   if (alignMatch) {
-    // Capitalize first letter
     const val = alignMatch[1].toLowerCase();
     return val.charAt(0).toUpperCase() + val.slice(1);
   }
