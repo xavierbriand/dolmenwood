@@ -61,7 +61,14 @@ For each new feature or fix, strictly follow this loop:
     - Ensure strict adherence to architectural boundaries (Hexagonal).
     - Run full checks: `pnpm build && pnpm lint && pnpm test`.
 
-5.  **Merge:**
+5.  **Pre-Push Verification (Mandatory):**
+    - **Before** pushing any code or creating a PR, you **MUST** run the full verification suite locally:
+      ```bash
+      pnpm build && pnpm lint && pnpm test
+      ```
+    - **NEVER** push code that fails these checks. CI is for verification, not for testing if code works.
+
+6.  **Merge:**
     - Commit the changes once local CI checks pass.
     - **NEVER MERGE A BRANCH WITHOUT EXPLICIT CONSENT.** 
     - Always ask the user for confirmation before merging or creating a PR that would result in a merge.

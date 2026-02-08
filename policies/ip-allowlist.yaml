@@ -8,4 +8,8 @@
 #     term: "ForbiddenTerm"   (the exact term from assets/ that is allowed)
 #     reason: "Explanation for why this exception is granted"
 
-exceptions: []
+exceptions:
+  - file: packages/core/src/services/EncounterGenerator.integration.spec.ts
+    term: Encounter Type - Daytime - Wild
+    reason: "Integration test requires mocking exact table names from assets"
+

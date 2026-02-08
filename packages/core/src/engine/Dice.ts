@@ -1,19 +1,31 @@
 import { RandomProvider } from '../ports/RandomProvider.js';
 
-export class Dice {
+export class Die {
+  constructor(public readonly sides: number) {
+    if (sides < 1) {
+      throw new Error(`Invalid die sides: ${sides}`);
+    }
+  }
+
+  roll(random: RandomProvider): number {
+    return Math.floor(random.next() * this.sides) + 1;
+  }
+}
+
+export class DiceRoll {
   constructor(
     public readonly count: number,
-    public readonly sides: number,
-    public readonly modifier: number
+    public readonly die: Die,
+    public readonly modifier: number = 0
   ) {}
 
   /**
    * Parses a dice notation string (e.g., "1d6", "2d4+1", "d8", "3d6-2").
    * @param expression The dice string to parse.
-   * @returns A Dice instance.
+   * @returns A DiceRoll instance.
    * @throws Error if the string is invalid.
    */
-  static parse(expression: string): Dice {
+  static parse(expression: string): DiceRoll {
     // Regex explanation:
     // ^\s*          Start of string, optional whitespace
     // (?<count>\d*) Capture group for count (optional digits)
@@ -36,19 +48,7 @@ export class Dice {
     const sides = parseInt(sidesStr, 10);
     const modifier = modStr ? parseInt(modStr, 10) : 0;
 
-    if (count < 1) {
-        // Technically 0d6 is valid in some systems (result 0), but typically we expect at least 1 die.
-        // However, the prompt implies standard dice notation.
-        // If the user inputs "0d6", the regex matches. 
-        // Let's assume count >= 1 is good practice, or at least >= 0.
-        // If count is 0, the loop in roll won't run, result is modifier.
-    }
-    
-    if (sides < 1) {
-         throw new Error(`Invalid dice sides: ${sides}`);
-    }
-
-    return new Dice(count, sides, modifier);
+    return new DiceRoll(count, new Die(sides), modifier);
   }
 
   /**
@@ -59,11 +59,7 @@ export class Dice {
   roll(random: RandomProvider): number {
     let total = 0;
     for (let i = 0; i < this.count; i++) {
-      // random.next() is [0, 1)
-      // * sides is [0, sides)
-      // floor is 0..sides-1
-      // + 1 is 1..sides
-      total += Math.floor(random.next() * this.sides) + 1;
+      total += this.die.roll(random);
     }
     return total + this.modifier;
   }
