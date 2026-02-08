@@ -1,4 +1,5 @@
 import { TableRepository } from '../ports/TableRepository.js';
+import { CreatureRepository } from '../ports/CreatureRepository.js';
 import { RandomProvider } from '../ports/RandomProvider.js';
 import { DiceRoll, Die } from '../engine/Dice.js';
 import { Creature, Encounter, GenerationContext } from '../schemas/encounter.js';
@@ -11,7 +12,8 @@ export type EncounterResult =
 
 export class EncounterGenerator {
   constructor(
-    private readonly repository: TableRepository,
+    private readonly tableRepository: TableRepository,
+    private readonly creatureRepository: CreatureRepository,
     private readonly random: RandomProvider
   ) {}
 
@@ -88,7 +90,7 @@ export class EncounterGenerator {
   }
 
   private formatRegionName(regionId: string): string {
-    // "high-wold" -> "High Wold"
+    // "generic-forest" -> "Generic Forest"
     return regionId
       .split('-')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
@@ -106,7 +108,19 @@ export class EncounterGenerator {
   // Modified to support context for Regional lookups
   async generate(tableName: string, context?: GenerationContext): Promise<Result<EncounterResult>> {
     // 1. Load the table
-    const tableResult = await this.repository.getTable(tableName);
+    let tableResult = await this.tableRepository.getTable(tableName);
+
+    // Fallback: Try localized table name if context is available
+    // e.g. "Common - Animal" -> "Common - Animal - High Wold"
+    if (tableResult.kind === 'failure' && context) {
+      const regionName = this.formatRegionName(context.regionId);
+      const localizedName = `${tableName} - ${regionName}`;
+      const localizedResult = await this.tableRepository.getTable(localizedName);
+      if (localizedResult.kind === 'success') {
+        tableResult = localizedResult;
+      }
+    }
+
     if (tableResult.kind === 'failure') {
       return failure(new Error(`Failed to load table '${tableName}': ${tableResult.error.message}`));
     }
@@ -146,9 +160,9 @@ export class EncounterGenerator {
   }
 
   private async resolveCreature(entry: TableEntry): Promise<Result<EncounterResult>> {
-    const creatureResult = await this.repository.getCreature(entry.ref);
+    const creatureResult = await this.creatureRepository.getByName(entry.ref);
     if (creatureResult.kind === 'failure') {
-      return failure(new Error(`Failed to load creature '${entry.ref}': ${creatureResult.error.message}`));
+      return failure(new Error(`Failed to load creature '${entry.ref}': ${creatureResult.error}`));
     }
     
     const creature = creatureResult.data;

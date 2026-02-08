@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { EncounterGenerator } from './EncounterGenerator.js';
 import { TableRepository } from '../ports/TableRepository.js';
+import { CreatureRepository } from '../ports/CreatureRepository.js';
 import { RandomProvider } from '../ports/RandomProvider.js';
 import { Result, success, failure } from '../utils/Result.js';
 import { RegionTable } from '../schemas/tables.js';
@@ -8,24 +9,31 @@ import { Creature } from '../schemas/encounter.js';
 
 class MockTableRepository implements TableRepository {
   private tables = new Map<string, RegionTable>();
-  private creatures = new Map<string, Creature>();
 
   addTable(table: RegionTable) {
     this.tables.set(table.name, table);
-  }
-
-  addCreature(creature: Creature) {
-    this.creatures.set(creature.name, creature);
   }
 
   async getTable(name: string): Promise<Result<RegionTable>> {
     const table = this.tables.get(name);
     return table ? success(table) : failure(new Error('Table not found'));
   }
+}
 
-  async getCreature(name: string): Promise<Result<Creature>> {
+class MockCreatureRepository implements CreatureRepository {
+  private creatures = new Map<string, Creature>();
+
+  addCreature(creature: Creature) {
+    this.creatures.set(creature.name, creature);
+  }
+
+  async getByName(name: string): Promise<Result<Creature, string>> {
     const creature = this.creatures.get(name);
-    return creature ? success(creature) : failure(new Error('Creature not found'));
+    return creature ? success(creature) : failure('Creature not found');
+  }
+
+  async getAll(): Promise<Result<Creature[], string>> {
+    return success(Array.from(this.creatures.values()));
   }
 }
 
@@ -36,10 +44,11 @@ class MockRandom implements RandomProvider {
 
 describe('EncounterGenerator', () => {
   it('should generate a creature encounter by following references', async () => {
-    const repo = new MockTableRepository();
+    const tableRepo = new MockTableRepository();
+    const creatureRepo = new MockCreatureRepository();
     
     // Setup Data
-    repo.addTable({
+    tableRepo.addTable({
       name: 'Root Table',
       die: '1d6',
       entries: [
@@ -47,7 +56,7 @@ describe('EncounterGenerator', () => {
       ]
     });
 
-    repo.addTable({
+    tableRepo.addTable({
       name: 'Sub Table',
       die: '1d6',
       entries: [
@@ -55,7 +64,7 @@ describe('EncounterGenerator', () => {
       ]
     });
 
-    repo.addCreature({
+    creatureRepo.addCreature({
       name: 'Test Goblin',
       level: 1,
       alignment: 'Neutral',
@@ -68,7 +77,7 @@ describe('EncounterGenerator', () => {
       morale: 7
     });
 
-    const generator = new EncounterGenerator(repo, new MockRandom());
+    const generator = new EncounterGenerator(tableRepo, creatureRepo, new MockRandom());
     const result = await generator.generate('Root Table');
 
     expect(result.kind).toBe('success');

@@ -3,9 +3,11 @@ export function coreHello(): string {
 }
 
 export * from './schemas/encounter.js';
+export * from './schemas/creature.js';
 export * from './schemas/tables.js';
 export * from './ports/RandomProvider.js';
 export * from './ports/TableRepository.js';
+export * from './ports/CreatureRepository.js';
 export * from './utils/Result.js';
 export * from './engine/Dice.js';
 export * from './engine/TableRoller.js';
