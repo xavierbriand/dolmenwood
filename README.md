@@ -12,12 +12,14 @@ A CLI tool for generating random encounters for the Dolmenwood RPG setting. This
 ### Installation
 
 1.  Clone the repository:
+
     ```bash
     git clone https://github.com/xavierbriand/dolmenwood.git
     cd dolmenwood
     ```
 
 2.  Install dependencies:
+
     ```bash
     pnpm install
     ```
@@ -32,6 +34,7 @@ A CLI tool for generating random encounters for the Dolmenwood RPG setting. This
 Because the encounter tables and creature statistics are proprietary content of Dolmenwood, they are **not included** in this repository. You must provide them manually.
 
 1.  Create an `assets` folder in the root directory:
+
     ```bash
     mkdir assets
     ```
@@ -41,6 +44,7 @@ Because the encounter tables and creature statistics are proprietary content of 
 ### File Formats
 
 **Creature Data** (e.g., `assets/creatures.yaml`)
+
 ```yaml
 - name: Forest Sprite
   level: 1
@@ -58,6 +62,7 @@ Because the encounter tables and creature statistics are proprietary content of 
 ```
 
 **Table Data** (e.g., `assets/regions.yaml`)
+
 ```yaml
 # Root regional tables usually follow the naming convention:
 # "Encounter Type - {Time} - {Terrain/Condition}"
@@ -84,6 +89,29 @@ Because the encounter tables and creature statistics are proprietary content of 
       ref: Forest Sprite # References a name in creatures.yaml
       count: 1d10
 ```
+
+### 📚 Importing Data (ETL)
+
+If you own the **Dolmenwood Monster Book (PDF)**, you can use the automated ETL pipeline to extract creature data.
+
+1.  Place your `DMB.pdf` file in a `tmp/etl/` directory at the project root:
+
+    ```bash
+    mkdir -p tmp/etl
+    cp /path/to/DMB.pdf tmp/etl/DMB.pdf
+    ```
+
+2.  Run the pipeline:
+
+    ```bash
+    pnpm --filter @dolmenwood/etl start all --clean
+    ```
+
+3.  The pipeline will:
+    - Extract text from the PDF.
+    - Parse creature statistics (Armor Class, Hit Dice, Attacks, etc.).
+    - Validate the data against the schema.
+    - Output a ready-to-use `assets/creatures.yaml` file.
 
 ## 🎮 Usage
 
