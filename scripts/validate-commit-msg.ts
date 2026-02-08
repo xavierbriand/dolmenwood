@@ -30,7 +30,7 @@ try {
       console.error(`   - Found "${v.matchedStr}" (Matches Asset: "${v.term}")`);
     });
     console.error('\n   ACTION REQUIRED: Please reword your commit message to avoid specific entity names.');
-    console.error('   (e.g., use "add wandering monster" instead of "add Elf Wanderer")');
+    console.error('   (e.g., use "add wandering monster" instead of "add <Entity Name>")');
     process.exit(1);
   } else {
     process.exit(0);

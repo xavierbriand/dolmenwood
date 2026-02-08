@@ -9,7 +9,7 @@
 #     reason: "Explanation for why this exception is granted"
 
 exceptions:
-  # Example:
-  # - file: packages/core/src/legacy-test.spec.ts
-  #   term: Elf-Wanderer
-  #   reason: Legacy test data that cannot be mocked yet
+  - file: scripts/ip-check.ts
+    term: assets/ directory reference
+    reason: "Compliance script must check for references to the assets directory"
+

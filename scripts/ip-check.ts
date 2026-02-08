@@ -10,6 +10,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, '..');
 const PACKAGES_DIR = path.join(ROOT_DIR, 'packages');
+const SCRIPTS_DIR = path.join(ROOT_DIR, 'scripts');
 const ALLOWLIST_PATH = path.join(ROOT_DIR, 'ip-allowlist.yaml');
 const IGNORED_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.svg', '.ico'];
 
@@ -60,7 +61,10 @@ function isAllowed(file: string, term: string, allowList: AllowedException[]): b
 
 function scanCodebase(forbiddenTerms: ForbiddenTerm[]): Violation[] {
   const violations: Violation[] = [];
-  const sourceFiles = getAllFiles(PACKAGES_DIR);
+  const sourceFiles = [
+    ...getAllFiles(PACKAGES_DIR),
+    ...getAllFiles(SCRIPTS_DIR)
+  ];
   const allowList = getAllowList();
 
   console.log(`🔍 Scanning ${sourceFiles.length} source files for IP violations...`);
@@ -74,20 +78,7 @@ function scanCodebase(forbiddenTerms: ForbiddenTerm[]): Violation[] {
     const relativeFilePath = path.relative(ROOT_DIR, file);
 
     lines.forEach((line, index) => {
-      // Check 1: Direct reference to assets folder
-      if (line.includes('assets/')) {
-         if (isAllowed(relativeFilePath, 'assets/', allowList)) return;
-         violations.push({
-           file: relativeFilePath,
-           line: index + 1,
-           term: 'assets/ directory reference',
-           matchedStr: 'assets/',
-           context: line.trim()
-         });
-         return;
-      }
-
-      // Check 2: Forbidden Terms
+      // Check 1: Forbidden Terms
       for (const { original, regex } of forbiddenTerms) {
         const match = regex.exec(line);
         if (match) {

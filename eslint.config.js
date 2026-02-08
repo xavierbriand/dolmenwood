@@ -13,6 +13,12 @@ export default tseslint.config(
     },
     rules: {
       '@typescript-eslint/no-unused-vars': 'warn',
+      'no-restricted-imports': ['error', {
+        patterns: [{
+          group: ['**/assets/**', '**/assets', '../assets/**', '../../assets/**'],
+          message: 'Direct import from @assets/ is strictly forbidden. Use Core ports or Data adapters.'
+        }]
+      }]
     },
     ignores: ['**/dist/**', '**/node_modules/**']
   }

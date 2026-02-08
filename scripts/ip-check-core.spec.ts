@@ -13,17 +13,17 @@ describe('IP Compliance Core', () => {
     });
 
     it('should generate flexible regex for multi-word terms', () => {
-      const regex = generateRegexForTerm('Elf-Wanderer');
+      const regex = generateRegexForTerm('Forest-Walker');
       
       // Should match various separators
-      expect(regex.test('Elf-Wanderer')).toBe(true);
-      expect(regex.test('Elf Wanderer')).toBe(true);
-      expect(regex.test('Elf_Wanderer')).toBe(true);
-      expect(regex.test('Elf  Wanderer')).toBe(true); // Multiple spaces
+      expect(regex.test('Forest-Walker')).toBe(true);
+      expect(regex.test('Forest Walker')).toBe(true);
+      expect(regex.test('Forest_Walker')).toBe(true);
+      expect(regex.test('Forest  Walker')).toBe(true); // Multiple spaces
 
       // Should be case insensitive for multi-word
-      expect(regex.test('elf wanderer')).toBe(true);
-      expect(regex.test('ELF WANDERER')).toBe(true);
+      expect(regex.test('forest walker')).toBe(true);
+      expect(regex.test('FOREST WALKER')).toBe(true);
     });
 
     it('should escape special characters in terms', () => {
