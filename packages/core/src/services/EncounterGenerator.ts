@@ -56,8 +56,9 @@ export class EncounterGenerator {
       encounter.details.distance = `${distRoll * distMultiplier} feet`;
 
       // Surprise
-      const playerSurprise = this.random.nextInRange(1, 6) <= 2;
-      const monsterSurprise = this.random.nextInRange(1, 6) <= 2;
+      const d6 = new Dice(1, 6, 0);
+      const playerSurprise = d6.roll(this.random) <= 2;
+      const monsterSurprise = d6.roll(this.random) <= 2;
       if (playerSurprise && monsterSurprise) encounter.details.surprise = 'Both sides surprised';
       else if (playerSurprise) encounter.details.surprise = 'Players surprised';
       else if (monsterSurprise) encounter.details.surprise = 'Monsters surprised';

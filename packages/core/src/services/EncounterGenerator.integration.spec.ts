@@ -106,7 +106,11 @@ describe('EncounterGenerator Integration', () => {
     if (result.kind === 'success') {
       const encounter = result.data;
       expect(encounter.type).toBe('Creature');
-      expect(encounter.details.creature.name).toBe('Mossling');
+      if (encounter.details.creature) {
+        expect(encounter.details.creature.name).toBe('Mossling');
+      } else {
+        throw new Error('Expected creature details to be present');
+      }
       // expect(encounter.details.activity).toBe('Cooking a stew');
       // expect(encounter.details.reaction).toBe('Friendly');
     }

@@ -40,3 +40,4 @@ export const EncounterTableSchema = RegionTableSchema;
 
 export type TableEntry = z.infer<typeof TableEntrySchema>;
 export type RegionTable = z.infer<typeof RegionTableSchema>;
+export type Table = RegionTable;
