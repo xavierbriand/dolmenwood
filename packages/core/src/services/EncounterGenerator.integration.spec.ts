@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { EncounterGenerator } from './EncounterGenerator.js';
 import { TableRepository } from '../ports/TableRepository.js';
 import { RandomProvider } from '../ports/RandomProvider.js';
-import { Result, success } from '../utils/Result.js';
+import { success } from '../utils/Result.js';
 import { Table } from '../schemas/tables.js';
 import { Creature } from '../schemas/encounter.js';
 
@@ -98,7 +98,6 @@ describe('EncounterGenerator Integration', () => {
       camping: false
     };
 
-    // @ts-ignore - generateEncounter not implemented yet
     const result = await generator.generateEncounter(context);
 
     // 4. Assert
