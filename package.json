@@ -16,6 +16,11 @@
   "keywords": [],
   "author": "BMad",
   "license": "ISC",
+  "pnpm": {
+    "overrides": {
+      "esbuild": "^0.25.0"
+    }
+  },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
     "@types/node": "^20.11.0",
