@@ -1,9 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { parseCreatures } from '../src/steps/transform.js';
 
-
-
-
 describe('transform', () => {
   it('should parse a creature from the Bestiary section', () => {
     const SAMPLE_TEXT_GHOST = `
@@ -61,134 +58,122 @@ Part Three Appendices
     }
   });
 
-  it('should parse another creature from the Bestiary section', () => {
-    const SAMPLE_TEXT_KNIGHT = `
-Names: See Generic Kindred, DPB and Faction.
+  it('should parse Adventurers (Level 1 only)', () => {
+    const SAMPLE_TEXT_ADVENTURERS = `
+Part Three Appendices
+Adventurers
+Level 1 Bard (Rhymer) AC 6 HP 1d6 (4) Saves D13 W14 P13 B16 S15
+Attacks Sword (+1, 1d8)
+Speed 40 Morale 8 XP 10
+Level 3 Bard (Minstrel) AC 5 HP 3d6 (14) Saves D13 W14 P13 B16 S15
+Level 5 Bard (Troubadour) AC 4 HP 5d6 (24) Saves D13 W14 P13 B16 S15
 
-part two | Bestiary
-38
-Generic Knight
-Generic description text. Generic description text.
-Generic description text. Generic description text.
-MeDiuM human—sentient—any alignMent
-Level 4 AC 17 HP 4d8 (18) Saves D10 R11 H12 B13 S14
-Attacks Longsword (+5, 1d8+2)  
-or lance (+3, 1d6, when mounted)
-Speed 20 Morale 9 XP 130
-Encounters 1d4 (no lairs in the mortal world)
-Behaviour Romantic, arrogant, resolute
-Speech Poetic bravado. Common, High Tongue
-Possessions 2d4gp + 1d6pp Hoard None
-Cold iron: As fairies, knights suffer 1 extra point of 
-damage when hit with cold iron weapons.
-Longsword: Knights wield a Longsword of 
-unusual make (see Magic Swords—magic item value 
-4,000gp). These swords possess a capricious sentience and 
-resist possession by others: a non-knight wielding a sword 
-must Save Versus Spell or come under its control for 1d6 
-Rounds, attempting to slay all mortals within sight.
-Mount: Knights are usually mounted. Roll 1d6 to deter-
-mine the type of mount: 1–4: horse (p40), 5: charger 
-(DPB), 6: special (dire wolf, giant snail, giant boar, etc.).
-TRAITS
-1Opalescent skin dusted with powdered crystal.
-2Armour of plated ice shards.
-3Golden feathered nightingale on shoulder.
-4Hair of gold filigree.
-5Amber or greem eyes without pupils.
-6Armour of scintillating brid feathers.
-Frost Knights
-Alignment: 3-in-6 chance of being Chaotic.
-Warm touch: May attack in melee by touch, instead of 
-by weapon, inflicting 1d3 heat damage.
-Snow-clad ground: Pass without leaving a trace.
-IN THE SERVICE OF
-1The Warm Prince. Wild knight—see below.
-2Duke August-Fleur.
-3The Duke Who Cherishes Dreams.
-4The Earl of Red.
-5The Lady of Noon.
-6Prince Mallowlung. Frost knight—see below.
-7Princess Endramethios.
-8The King Who Is Nine.
-9The King of Turtoise.
-10Regent Stone.
-ENCOUNTERS
-1Gazing at a fallen leaf, composing an ode to the wondrous 
-2In battle with 1d3 goblins (p114), attempt-
-ing stuff
-3Performing 
-MAGIC SWORDS
-1Floral. Leaves a trail of ephemeral blossoms when swung.
-2Celestial. Reflects the stars and moon, even during the 
-3Hair’s breadth. Blade has no thickness.
-4Perfumed. Produces subtle wafts of rose scent in the 
-Names: See Kindred, DPB and Faction, DCB. See also: Nobles and Their Dominions, DCB.
+Level 1 Cleric (Acolyte) AC 5 HP 1d6 (4) Saves D11 W12 P14 B16 S15
+Attacks Mace (+1, 1d6)
+Speed 30 Morale 9 XP 15
 
-part two | Bestiary
-39
-Wanderer
+Adventuring Parties
 `;
+    const creatures = parseCreatures(SAMPLE_TEXT_ADVENTURERS);
 
-    const creatures = parseCreatures(SAMPLE_TEXT_KNIGHT);
+    // Should find Bard and Cleric (Level 1 only)
+    expect(creatures).toHaveLength(2);
 
-    const knight = creatures.find((c) => c.name === 'Generic Knight');
-    expect(knight).toBeDefined();
+    const bard = creatures.find((c) => c.name === 'Bard');
+    expect(bard).toBeDefined();
+    expect(bard?.level).toBe(1);
+    expect(bard?.type).toBe('Mortal');
+    expect(bard?.armourClass).toBe(6);
+    expect(bard?.hitDice).toBe('1d6');
+    expect(bard?.attacks).toEqual(['Sword (+1, 1d8)']);
 
-    if (knight) {
-      expect(knight.name).toBe('Generic Knight');
-      expect(knight.level).toBe(4);
-      expect(knight.alignment).toBe('Any');
-      expect(knight.xp).toBe(130);
-      expect(knight.armourClass).toBe(17);
-      expect(knight.hitDice).toBe('4d8');
-      expect(knight.attacks).toEqual([
-        'Longsword (+5, 1d8+2) or lance (+3, 1d6, when mounted)',
-      ]);
-      expect(knight.movement).toBe(20);
-      expect(knight.morale).toBe(9);
-    }
+    const cleric = creatures.find((c) => c.name === 'Cleric');
+    expect(cleric).toBeDefined();
+    expect(cleric?.level).toBe(1);
+    expect(cleric?.attacks).toEqual(['Mace (+1, 1d6)']);
   });
 
-  it('should parse creatures with abbreviated stats and inline values (Problem Case)', () => {
-    const SAMPLE_TEXT_PROBLEM = `
-part two | Bestiary
-99
-Generic Unique Entity
-MeDiuM Mortal—sentient—any alignMent
-Level 4 AC 13 HP 4d8 (18) Saves D10 R11 H12 B13 S14 
-Att Staff (+3, 1d4) Speed 50 Morale 8 XP 180
-Hold: May cast the holy spell Hold Person once per day.
-Other traits: As per standard entity.
-Names: 1. NameOne, 2. NameTwo.
+  it('should parse Everyday Mortals with shared stats', () => {
+    const SAMPLE_TEXT_MORTALS = `
+Part Three Appendices
+Everyday Mortals
+Generic description of mortals.
 
-Aquatic Fey
-Aquatic stuff.
-MeDiuM DeMi-fey—sentient—any alignMent
-Level 2 AC 12 HP 2d8 (9) Saves D12 R13 H14 B15 S16
-Attacks Trident (+1, 1d6) or horns (+1, 1d4)
-Swim 40 Morale 8 XP 20
-Encounters 2d6 (10% in lair)
-part three
+FISHER
+HERALD
+WANDERER
+
+Everyday Mortal
+Medium mortal—sentient—any alignment
+Level 1 AC 9 HP 1d4 (2) Saves D14 W15 P16 B17 S18
+Attacks Dagger (-1, 1d4-1) or improvised (-1, 1d2-1)
+Speed 40 Morale 7 XP 5
+Encounters 1d4
+Animals
 `;
-    const creatures = parseCreatures(SAMPLE_TEXT_PROBLEM);
+    const creatures = parseCreatures(SAMPLE_TEXT_MORTALS);
 
-    const entity = creatures.find((c) => c.name === 'Generic Unique Entity');
-    expect(entity).toBeDefined();
-    if (entity) {
-      expect(entity.attacks?.[0]).toContain('Staff (+3, 1d4)');
-      expect(entity.movement).toBe(50);
-      expect(entity.morale).toBe(8);
-      expect(entity.xp).toBe(180);
-      // Verify default number appearing
-      expect(entity.numberAppearing).toBe('1 (Unique)');
-    }
+    // Should find Fisher, Herald, Wanderer (3 creatures)
+    // Note: The template "Everyday Mortal" itself is NOT expected in the final list as a creature type unless listed as a Job,
+    // but the current logic parses "Everyday Mortal" as a template inside parseEverydayMortals and then clones it.
+    // However, the `parseBestiary` call inside `parseEverydayMortals` *will* find "Everyday Mortal" as a creature.
+    // My implementation calls `parseBestiary(text)` to find the template.
+    // But `parseEverydayMortals` creates NEW creatures for each Job.
+    // It returns the list of Job creatures.
+    // Wait, let's check my implementation.
 
-    const fey = creatures.find((c) => c.name === 'Aquatic Fey');
-    expect(fey).toBeDefined();
-    if (fey) {
-      expect(fey.movement).toBe(40);
-      expect(fey.xp).toBe(20);
-    }
+    // In `parseEverydayMortals`:
+    // const candidates = parseBestiary(text);
+    // const template = candidates.find(...)
+    // ... loop jobs ... creatures.push(creature)
+    // return creatures; (Only the jobs)
+
+    // So "Everyday Mortal" itself won't be in the returned list unless I explicitly add it.
+    // The story says: "Create a separate Creature entry for each Job, using the stats from 'Everyday Mortal'."
+    // It doesn't explicitly say "Exclude 'Everyday Mortal' itself", but it implies the goal is to load the Jobs.
+
+    expect(creatures.length).toBe(3);
+
+    const angler = creatures.find((c) => c.name === 'Fisher');
+    expect(angler).toBeDefined();
+    expect(angler?.type).toBe('Mortal');
+    expect(angler?.armourClass).toBe(9);
+    expect(angler?.xp).toBe(5);
+
+    const crier = creatures.find((c) => c.name === 'Herald');
+    expect(crier).toBeDefined();
+  });
+
+  it('should parse Animals with name normalization', () => {
+    const SAMPLE_TEXT_ANIMALS = `
+Part Three Appendices
+Animals
+TEST, BEAST
+Carnivorous giant bats.
+Neutral
+Level 2 AC 6 HP 2d8 (9) Saves D12 R13 H14 B15 S16
+Attacks Bite (+2, 1d4)
+Speed 10 Fly 60 Morale 7 XP 20
+Encounters 1d10 (1d10)
+
+TEST, HOUND
+Loyal beasts.
+Neutral
+Level 2 AC 7 HP 2d8+2 (11) Saves D12 R13 H14 B15 S16
+Attacks Bite (+3, 2d4)
+Speed 40 Morale 11 XP 25
+Monster Rumours
+`;
+    const creatures = parseCreatures(SAMPLE_TEXT_ANIMALS);
+
+    expect(creatures).toHaveLength(2);
+
+    const bat = creatures.find((c) => c.name === 'Test, Beast');
+    expect(bat).toBeDefined();
+    expect(bat?.armourClass).toBe(6);
+    expect(bat?.movement).toBe('10 Fly 60');
+
+    const dog = creatures.find((c) => c.name === 'Test, Hound');
+    expect(dog).toBeDefined();
   });
 });

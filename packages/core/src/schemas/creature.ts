@@ -14,6 +14,7 @@ export const CreatureSchema = z.object({
   treasure: z.string().optional(),
   save: z.string().optional(), // 'D12 W13 P14 B15 S16 (2)'
   kindred: z.string().optional(),
+  type: z.string().optional(),
   description: z.string().optional(),
 });
 
