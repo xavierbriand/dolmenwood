@@ -117,11 +117,41 @@ function getForbiddenTerms(): ForbiddenTerm[] {
     }));
 }
 
+const ALLOWLIST_PATH = path.join(ROOT_DIR, 'ip-allowlist.yaml');
+
+interface AllowedException {
+  file: string;
+  term: string;
+  reason?: string;
+}
+
+interface AllowList {
+  exceptions: AllowedException[];
+}
+
+function getAllowList(): AllowedException[] {
+  if (!fs.existsSync(ALLOWLIST_PATH)) return [];
+  try {
+    const content = fs.readFileSync(ALLOWLIST_PATH, 'utf8');
+    const data = yaml.load(content) as AllowList;
+    return data?.exceptions || [];
+  } catch (e) {
+    console.warn('⚠️  Failed to load allow list:', e);
+    return [];
+  }
+}
+
+function isAllowed(file: string, term: string, allowList: AllowedException[]): boolean {
+  return allowList.some(ex => ex.file === file && ex.term === term);
+}
+
 function scanCodebase(forbiddenTerms: ForbiddenTerm[]): Violation[] {
   const violations: Violation[] = [];
   const sourceFiles = getAllFiles(PACKAGES_DIR);
+  const allowList = getAllowList();
 
   console.log(`🔍 Scanning ${sourceFiles.length} source files for IP violations...`);
+  console.log(`📋 Loaded ${allowList.length} allowed exceptions.`);
 
   sourceFiles.forEach((file) => {
     // Skip binary files or likely non-source
@@ -129,12 +159,16 @@ function scanCodebase(forbiddenTerms: ForbiddenTerm[]): Violation[] {
     
     const content = fs.readFileSync(file, 'utf8');
     const lines = content.split('\n');
+    const relativeFilePath = path.relative(ROOT_DIR, file);
 
     lines.forEach((line, index) => {
       // Check 1: Direct reference to assets folder
-      if (line.includes('assets/') && !line.includes('IP_POLICY_EXCEPTION')) {
+      if (line.includes('assets/')) {
+         // Check allowlist for this specific check (using term='assets/')
+         if (isAllowed(relativeFilePath, 'assets/', allowList)) return;
+
          violations.push({
-           file: path.relative(ROOT_DIR, file),
+           file: relativeFilePath,
            line: index + 1,
            term: 'assets/ directory reference',
            matchedStr: 'assets/',
@@ -147,11 +181,11 @@ function scanCodebase(forbiddenTerms: ForbiddenTerm[]): Violation[] {
       for (const { original, regex } of forbiddenTerms) {
         const match = regex.exec(line);
         if (match) {
-            // Allow exceptions via comment
-            if (line.includes('IP_POLICY_EXCEPTION')) continue;
+            // Check Allow List
+            if (isAllowed(relativeFilePath, original, allowList)) continue;
 
             violations.push({
-              file: path.relative(ROOT_DIR, file),
+              file: relativeFilePath,
               line: index + 1,
               term: original,
               matchedStr: match[0],
@@ -204,11 +238,13 @@ function scanCodebase(forbiddenTerms: ForbiddenTerm[]): Violation[] {
            if (isViolation) {
              confirmedViolations.push(v);
            } else {
-             console.log(`   ℹ️  To suppress this permanently, add '// IP_POLICY_EXCEPTION' to the line.`);
-             // We treat "No" as "It is NOT a violation, but we still need to fix the code to pass CI"
-             // Actually, if user says "No", we should probably exit with error telling them to add the comment,
-             // because CI won't be interactive.
-             console.log(`   ❌ You MUST add the exception comment to pass CI.`);
+             console.log(`   ℹ️  To suppress this permanently, add the following to ip-allowlist.yaml:`);
+             console.log(`
+  - file: ${v.file}
+    term: ${v.term}
+    reason: "Reviewed and approved by user"
+`);
+             console.log(`   ❌ You MUST add the exception to the allow list to pass CI.`);
              confirmedViolations.push(v);
            }
         } else {
@@ -219,7 +255,7 @@ function scanCodebase(forbiddenTerms: ForbiddenTerm[]): Violation[] {
 
       if (confirmedViolations.length > 0) {
         console.error(`\n❌ IP VALIDATION FAILED: ${confirmedViolations.length} confirmed violations.`);
-        console.error('   ACTION REQUIRED: Remove references or add // IP_POLICY_EXCEPTION.');
+        console.error('   ACTION REQUIRED: Remove references or add them to ip-allowlist.yaml.');
         process.exit(1);
       }
     } else {

@@ -1,0 +1,15 @@
+# IP Compliance Allow List
+# This file defines approved exceptions to the strict IP compliance policy.
+# Each entry permits a specific forbidden term to be used in a specific file.
+#
+# Schema:
+# exceptions:
+#   - file: "path/to/file.ts" (relative to project root)
+#     term: "ForbiddenTerm"   (the exact term from assets/ that is allowed)
+#     reason: "Explanation for why this exception is granted"
+
+exceptions:
+  # Example:
+  # - file: packages/core/src/legacy-test.spec.ts
+  #   term: Elf-Wanderer
+  #   reason: Legacy test data that cannot be mocked yet
