@@ -124,5 +124,5 @@ The project follows a **Hexagonal Architecture (Ports & Adapters)** structure wi
 
 ## 6. Reference Documentation
 
-- See `tech_stack.md` for detailed technical constraints.
+- See `_bmad-output/tech_stack.md` for detailed technical constraints.
 - See `rules/Encounter rules.md` for domain logic and tables.

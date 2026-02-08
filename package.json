@@ -1,0 +1,27 @@
+{
+  "name": "dolmenwood-encounters",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Dolmenwood Encounter Generator Monorepo",
+  "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint",
+    "start": "pnpm --filter @dolmenwood/cli start"
+  },
+  "keywords": [],
+  "author": "BMad",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "eslint": "^8.56.0",
+    "prettier": "^3.2.5",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.2"
+  }
+}

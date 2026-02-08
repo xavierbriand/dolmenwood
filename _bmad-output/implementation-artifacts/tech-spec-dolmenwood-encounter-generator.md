@@ -43,9 +43,9 @@ A Node.js/TypeScript core library handling nested probability tables and dice lo
 Greenfield project.
 - **Language**: TypeScript 5.x (Node.js LTS)
 - **Architecture**: Monorepo-style workspace with 3 tiers:
-    - `@deg/core`: Pure Domain Logic & Use Cases (Hexagonal Ports)
-    - `@deg/data`: Data Access Adapters (YAML Reader)
-    - `@deg/cli`: Presentation & User Interface
+    - `@dolmenwood/core`: Pure Domain Logic & Use Cases (Hexagonal Ports)
+    - `@dolmenwood/data`: Data Access Adapters (YAML Reader)
+    - `@dolmenwood/cli`: Presentation & User Interface
 - **Validation**: `zod` for strict runtime validation of YAML data.
 - **CLI**: `commander` for command structure, `inquirer` for interactive prompts.
 
@@ -61,7 +61,7 @@ Greenfield project.
 
 - **Architecture**: "Hexagonal" style. Core defines ports; Data implements them. Strict boundaries via ESLint/dependency rules. Core must return pure DTOs (JSON-serializable) to ensure the API is ready for Phase 2 Web UI (no CLI dependencies in Core).
 - **Data**: YAML for human-readable configuration. Zod schemas ensure invalid YAML crashes early with clear errors.
-- **State**: CLI implements a `SessionTracker` class that persists `GenerationContext` to a local JSON file (`~/.deg/session.json`) for crash recovery.
+- **State**: CLI implements a `SessionTracker` class that persists `GenerationContext` to a local JSON file (`~/.dolmenwood/session.json`) for crash recovery.
 - **Testing**: Vitest for unit tests. `vitest-cucumber` for BDD feature files.
 
 ## Implementation Plan
@@ -70,7 +70,7 @@ Greenfield project.
 
 - [ ] Task 1: Setup Monorepo & Core Infrastructure
   - File: `package.json`, `packages/core/package.json`, `packages/data/package.json`, `packages/cli/package.json`, `tsconfig.json`
-  - Action: Initialize npm workspace, install Typescript, Vitest, and configured build scripts. Set up `@deg/core`, `@deg/data`, `@deg/cli`.
+  - Action: Initialize npm workspace, install Typescript, Vitest, and configured build scripts. Set up `@dolmenwood/core`, `@dolmenwood/data`, `@dolmenwood/cli`.
   - Notes: Ensure core is a dependency of cli and data implements core ports.
 
 - [ ] Task 2: Define Zod Schemas & YAML Types
@@ -95,8 +95,8 @@ Greenfield project.
 
 - [ ] Task 6: Implement CLI Session Tracker (Persisted)
   - File: `packages/cli/src/session.ts`
-  - Action: Create `SessionTracker` class to store `GenerationContext` (hex, time, camping status). Add `load/save` methods to `~/.deg/session.json`.
-  - Notes: Handle file read errors gracefully. Ensure `save` method automatically creates the directory (`mkdir -p ~/.deg`) if it doesn't exist.
+  - Action: Create `SessionTracker` class to store `GenerationContext` (hex, time, camping status). Add `load/save` methods to `~/.dolmenwood/session.json`.
+  - Notes: Handle file read errors gracefully. Ensure `save` method automatically creates the directory (`mkdir -p ~/.dolmenwood`) if it doesn't exist.
 
 - [ ] Task 7: Implement CLI Commands
   - File: `packages/cli/src/index.ts`, `packages/cli/src/commands/generate.ts`, `packages/cli/src/commands/travel.ts`
@@ -136,7 +136,7 @@ Greenfield project.
   - Then it throws a clear Zod validation error and refuses to run.
 
 - [ ] AC 5: Debug Mode
-  - Given I run `deg generate --debug`
+  - Given I run `dolmenwood generate --debug`
   - When an encounter is generated
   - Then the output includes raw dice rolls and table selection paths.
 

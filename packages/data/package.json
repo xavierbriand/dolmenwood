@@ -1,0 +1,24 @@
+{
+  "name": "@dolmenwood/data",
+  "version": "0.0.1",
+  "description": "Data adapters for Dolmenwood Encounter Generator",
+  "type": "module",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "test": "vitest run",
+    "lint": "eslint src/**"
+  },
+  "dependencies": {
+    "@dolmenwood/core": "workspace:*",
+    "js-yaml": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18",
+    "@types/node": "^25.2.1"
+  }
+}

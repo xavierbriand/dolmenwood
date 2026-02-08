@@ -1,0 +1,23 @@
+{
+  "name": "@dolmenwood/core",
+  "version": "0.0.1",
+  "description": "Domain logic for Dolmenwood Encounter Generator",
+  "type": "module",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "test": "vitest run",
+    "lint": "eslint src/**"
+  },
+  "dependencies": {
+    "ts-pattern": "^5.0.6",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18",
+    "@types/node": "^25.2.1"
+  }
+}
