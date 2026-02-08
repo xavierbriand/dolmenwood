@@ -11,6 +11,19 @@ const ROOT_DIR = path.resolve(__dirname, '..');
 const ASSETS_DIR = path.join(ROOT_DIR, 'assets');
 const IGNORED_FILES = ['.DS_Store', 'node_modules'];
 
+// Terms that are found in assets but are considered structural/architectural
+// and are therefore safe to use in code (e.g. table names used for lookups).
+const SAFE_TERMS = [
+  'Activity',
+  'Reaction',
+];
+
+const SAFE_PREFIXES = [
+  'Encounter Type -',
+  'Common -',
+  'Regional -'
+];
+
 export interface ForbiddenTerm {
   original: string;
   regex: RegExp;
@@ -82,6 +95,8 @@ export function getForbiddenTerms(): ForbiddenTerm[] {
 
   return Array.from(terms)
     .filter(t => t.length > 3)
+    .filter(t => !SAFE_TERMS.includes(t))
+    .filter(t => !SAFE_PREFIXES.some(prefix => t.startsWith(prefix)))
     .map(t => ({
       original: t,
       regex: generateRegexForTerm(t)
