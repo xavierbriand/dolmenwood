@@ -11,7 +11,7 @@ const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, '..');
 const PACKAGES_DIR = path.join(ROOT_DIR, 'packages');
 const SCRIPTS_DIR = path.join(ROOT_DIR, 'scripts');
-const ALLOWLIST_PATH = path.join(ROOT_DIR, 'ip-allowlist.yaml');
+const ALLOWLIST_PATH = path.join(ROOT_DIR, 'policies', 'ip-allowlist.yaml');
 const IGNORED_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.svg', '.ico'];
 
 // Duplicate helper locally since it's simple and avoids circular dependencies or complex exports
@@ -132,7 +132,7 @@ function scanCodebase(forbiddenTerms: ForbiddenTerm[]): Violation[] {
            if (isViolation) {
              confirmedViolations.push(v);
            } else {
-             console.log(`   ℹ️  To suppress this permanently, add the following to ip-allowlist.yaml:`);
+             console.log(`   ℹ️  To suppress this permanently, add the following to policies/ip-allowlist.yaml:`);
              console.log(`
   - file: ${v.file}
     term: ${v.term}
@@ -148,7 +148,7 @@ function scanCodebase(forbiddenTerms: ForbiddenTerm[]): Violation[] {
 
       if (confirmedViolations.length > 0) {
         console.error(`\n❌ IP VALIDATION FAILED: ${confirmedViolations.length} confirmed violations.`);
-        console.error('   ACTION REQUIRED: Remove references or add them to ip-allowlist.yaml.');
+        console.error('   ACTION REQUIRED: Remove references or add them to policies/ip-allowlist.yaml.');
         process.exit(1);
       }
     } else {
