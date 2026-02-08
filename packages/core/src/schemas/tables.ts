@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { EncounterTypeSchema } from './encounter.js';
 
 export const TableEntrySchema = z.object({
   min: z.number().int().min(1),
