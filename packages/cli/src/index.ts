@@ -22,7 +22,7 @@ program
 
 program
   .command('encounter')
-  .argument('<table_name>', 'Name of the table to roll on (e.g. "Encounter Type - Daytime - Road")')
+  .argument('<table_name>', 'Name of the table to roll on (e.g. "Forest - Day")')
   .description('Generate a random encounter from a region table')
   .action(async (tableName) => {
     try {

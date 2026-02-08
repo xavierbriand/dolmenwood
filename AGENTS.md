@@ -63,9 +63,16 @@ For each new feature or fix, strictly follow this loop:
 
 5.  **Merge:**
     - Commit the changes once local CI checks pass.
-    - **Ask for confirmation** from the user to merge the branch back to `main`.
+    - **NEVER MERGE A BRANCH WITHOUT EXPLICIT CONSENT.** 
+    - Always ask the user for confirmation before merging or creating a PR that would result in a merge.
 
-## 3. Project Architecture
+## 3. Proprietary Information (Strict)
+
+- **Strict Separation:** Any content (e.g., names, statistics, descriptions) that is inside the `@assets/` folder **MUST NOT** be referred to anywhere else in the codebase (code, tests, documentation).
+- **Copyright:** This content is copyrighted. See [Copyright Notice](https://www.dolmenwood.necroticgnome.com/rules/doku.php?id=start).
+- **Test Data:** Use generic placeholders (e.g., "Forest Sprite", "Goblin Scout") in tests and examples.
+
+## 4. Project Architecture
 
 The project follows a **Hexagonal Architecture (Ports & Adapters)** structure within a Monorepo.
 

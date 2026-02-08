@@ -11,7 +11,7 @@ describe('YamlTableRepository', () => {
   const dataDir = join(__dirname, '../../tests/fixtures');
   const repo = new YamlTableRepository(dataDir);
 
-  it('should load Elf-Wanderer creature', async () => {
+  it('should load Test-Goblin creature', async () => {
     const result = await repo.getCreature('Test-Goblin');
     expect(result.kind).toBe('success');
     if (result.kind === 'success') {

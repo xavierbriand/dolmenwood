@@ -42,9 +42,9 @@ Because the encounter tables and creature statistics are proprietary content of 
 
 **`assets/creatures.yaml`** (List of creatures)
 ```yaml
-- name: Elf-Wanderer
+- name: Forest Sprite
   level: 1
-  alignment: Any
+  alignment: Neutral
   xp: 15
   numberAppearing: 1d6
   armourClass: 12
@@ -54,12 +54,12 @@ Because the encounter tables and creature statistics are proprietary content of 
     - Weapon (+0)
   morale: 7
   treasure: 2d4gp
-  description: Optional flavor text.
+  description: A small magical creature of the woods.
 ```
 
 **`assets/regions.yaml`** (Encounter tables)
 ```yaml
-- name: Encounter Type - Daytime - Road
+- name: Forest - Day
   die: 1d8
   entries:
     - min: 1
@@ -77,7 +77,7 @@ Because the encounter tables and creature statistics are proprietary content of 
     - min: 1
       max: 20
       type: Creature
-      ref: Bat, Giant # References a name in creatures.yaml
+      ref: Forest Sprite # References a name in creatures.yaml
       count: 1d10
 ```
 
@@ -90,7 +90,7 @@ Run the CLI using `pnpm`:
 pnpm --filter @dolmenwood/cli start -- encounter "<Table Name>"
 
 # Example
-pnpm --filter @dolmenwood/cli start -- encounter "Encounter Type - Daytime - Road"
+pnpm --filter @dolmenwood/cli start -- encounter "Forest - Day"
 ```
 
 ## 🛠️ Development
