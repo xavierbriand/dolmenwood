@@ -5,17 +5,20 @@ export const TableEntrySchema = z.object({
   max: z.number().int().min(1),
   type: z.string(), // Could be stricter
   ref: z.string(),
-  count: z.string().optional(),
+  count: z.coerce.string().optional(),
   description: z.string().optional(),
 });
 
 export const RegionTableSchema = z.object({
   name: z.string(),
-  die: z.string().regex(/^1d\d+$/), // e.g. "1d6", "1d20"
+  die: z.string().regex(/^\d+d\d+$/), // e.g. "1d6", "1d20", "2d6"
   entries: z.array(TableEntrySchema)
 }).refine((data) => {
-  const dieSize = parseInt(data.die.split('d')[1]);
-  // Check if ranges cover 1 to dieSize
+  const [numDice, dieSize] = data.die.split('d').map(Number);
+  const minSum = numDice;
+  const maxSum = numDice * dieSize;
+  
+  // Check if ranges cover minSum to maxSum
   const covered = new Set<number>();
   for (const entry of data.entries) {
     if (entry.min > entry.max) return false;
@@ -25,10 +28,10 @@ export const RegionTableSchema = z.object({
   }
   
   // Check if size matches
-  if (covered.size !== dieSize) return false;
+  if (covered.size !== (maxSum - minSum + 1)) return false;
   
-  // Check if 1..dieSize are all present
-  for (let i = 1; i <= dieSize; i++) {
+  // Check if minSum..maxSum are all present
+  for (let i = minSum; i <= maxSum; i++) {
     if (!covered.has(i)) return false;
   }
   

@@ -32,12 +32,22 @@ export class YamlTableRepository implements TableRepository {
     if (this.tablesCache) return this.tablesCache;
 
     this.tablesCache = (async () => {
-       const filePath = path.join(this.basePath, 'regions.yaml');
        try {
-         const content = await fs.readFile(filePath, 'utf-8');
-         const raw = yaml.load(content);
+         const files = await fs.readdir(this.basePath);
+         const tableFiles = files.filter(f => f.endsWith('.yaml') && f !== 'creatures.yaml');
+         
+         const allTables: RegionTable[] = [];
          const schema = z.array(RegionTableSchema);
-         return schema.parse(raw);
+
+         for (const file of tableFiles) {
+           const filePath = path.join(this.basePath, file);
+           const content = await fs.readFile(filePath, 'utf-8');
+           const raw = yaml.load(content);
+           const parsed = schema.parse(raw);
+           allTables.push(...parsed);
+         }
+         
+         return allTables;
        } catch (e) {
          this.tablesCache = null;
          throw e;
