@@ -2,6 +2,10 @@
 /.opencode/
 /rules/
 
+# Assets (Proprietary Data)
+assets/*
+!assets/.keep
+
 # Node
 node_modules/
 dist/

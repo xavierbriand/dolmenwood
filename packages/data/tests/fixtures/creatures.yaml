@@ -1,0 +1,13 @@
+- name: Test-Goblin
+  level: 1
+  alignment: Chaotic
+  xp: 10
+  numberAppearing: 2d6
+  armourClass: 11
+  movement: 20
+  hitDice: 1d6
+  attacks:
+    - Club (+0)
+  morale: 6
+  treasure: 1d6gp
+  description: A small, malicious humanoid used for testing.
