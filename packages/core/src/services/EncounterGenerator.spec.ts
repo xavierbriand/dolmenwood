@@ -18,6 +18,10 @@ class MockTableRepository implements TableRepository {
     const table = this.tables.get(name);
     return table ? success(table) : failure(new Error('Table not found'));
   }
+
+  async listTables(): Promise<Result<RegionTable[]>> {
+    return success(Array.from(this.tables.values()));
+  }
 }
 
 class MockCreatureRepository implements CreatureRepository {
@@ -39,29 +43,29 @@ class MockCreatureRepository implements CreatureRepository {
 
 class MockRandom implements RandomProvider {
   // Returns 0.5 to force middle results or predictable ones
-  next(): number { return 0.5; } 
+  next(): number {
+    return 0.5;
+  }
 }
 
 describe('EncounterGenerator', () => {
   it('should generate a creature encounter by following references', async () => {
     const tableRepo = new MockTableRepository();
     const creatureRepo = new MockCreatureRepository();
-    
+
     // Setup Data
     tableRepo.addTable({
       name: 'Root Table',
       die: '1d6',
-      entries: [
-        { min: 1, max: 6, type: 'Animal', ref: 'Sub Table' }
-      ]
+      entries: [{ min: 1, max: 6, type: 'Animal', ref: 'Sub Table' }],
     });
 
     tableRepo.addTable({
       name: 'Sub Table',
       die: '1d6',
       entries: [
-        { min: 1, max: 6, type: 'Creature', ref: 'Test Goblin', count: '1d4' }
-      ]
+        { min: 1, max: 6, type: 'Creature', ref: 'Test Goblin', count: '1d4' },
+      ],
     });
 
     creatureRepo.addCreature({
@@ -74,10 +78,14 @@ describe('EncounterGenerator', () => {
       movement: 30,
       hitDice: '1d6',
       attacks: ['Club'],
-      morale: 7
+      morale: 7,
     });
 
-    const generator = new EncounterGenerator(tableRepo, creatureRepo, new MockRandom());
+    const generator = new EncounterGenerator(
+      tableRepo,
+      creatureRepo,
+      new MockRandom(),
+    );
     const result = await generator.generate('Root Table');
 
     expect(result.kind).toBe('success');
@@ -85,9 +93,9 @@ describe('EncounterGenerator', () => {
       expect(result.data.kind).toBe('creature');
       if (result.data.kind === 'creature') {
         expect(result.data.name).toBe('Test Goblin');
-        // MockRandom returns 0.5. 
+        // MockRandom returns 0.5.
         // 1d4 count: floor(0.5 * 4) + 1 = 2 + 1 = 3
-        expect(result.data.count).toBe(3); 
+        expect(result.data.count).toBe(3);
       }
     }
   });

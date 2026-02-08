@@ -1,4 +1,3 @@
-
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { EncounterGenerator } from './EncounterGenerator.js';
 import { TableRepository } from '../ports/TableRepository.js';
@@ -11,6 +10,7 @@ import { Creature } from '../schemas/encounter.js';
 // Mock implementations
 class MockTableRepository implements TableRepository {
   getTable = vi.fn();
+  listTables = vi.fn();
 }
 
 class MockCreatureRepository implements CreatureRepository {
@@ -33,7 +33,11 @@ describe('EncounterGenerator Integration', () => {
     tableRepository = new MockTableRepository();
     creatureRepository = new MockCreatureRepository();
     random = new MockRandomProvider();
-    generator = new EncounterGenerator(tableRepository, creatureRepository, random);
+    generator = new EncounterGenerator(
+      tableRepository,
+      creatureRepository,
+      random,
+    );
   });
 
   it('should generate a full encounter with creature, activity, and reaction', async () => {
@@ -41,13 +45,13 @@ describe('EncounterGenerator Integration', () => {
     const mockEncounterTypeTable: Table = {
       name: 'Encounter Type - Daytime - Wild',
       die: '1d8',
-      entries: [{ min: 1, max: 8, type: 'Regional', ref: 'Regional' }]
+      entries: [{ min: 1, max: 8, type: 'Regional', ref: 'Regional' }],
     };
 
     const mockRegionalTable: Table = {
       name: 'Regional - Generic Forest',
       die: '1d20',
-      entries: [{ min: 1, max: 20, type: 'Creature', ref: 'Goblin' }]
+      entries: [{ min: 1, max: 20, type: 'Creature', ref: 'Goblin' }],
     };
 
     const mockMossling: Creature = {
@@ -61,27 +65,31 @@ describe('EncounterGenerator Integration', () => {
       hitDice: '1d6',
       attacks: ['club'],
       morale: 7,
-      description: 'Small mossy folk.'
+      description: 'Small mossy folk.',
     };
 
     const mockActivityTable: Table = {
       name: 'Activity',
       die: '1d20',
-      entries: [{ min: 1, max: 20, type: 'Text', ref: 'Cooking a stew' }]
+      entries: [{ min: 1, max: 20, type: 'Text', ref: 'Cooking a stew' }],
     };
 
     const mockReactionTable: Table = {
       name: 'Reaction',
       die: '2d6',
-      entries: [{ min: 2, max: 12, type: 'Text', ref: 'Friendly' }]
+      entries: [{ min: 2, max: 12, type: 'Text', ref: 'Friendly' }],
     };
 
     // 2. Setup Mock Behavior
     tableRepository.getTable.mockImplementation((name) => {
-      if (name === 'Encounter Type - Daytime - Wild') return Promise.resolve(success(mockEncounterTypeTable));
-      if (name === 'Regional - Generic Forest') return Promise.resolve(success(mockRegionalTable));
-      if (name === 'Activity') return Promise.resolve(success(mockActivityTable));
-      if (name === 'Reaction') return Promise.resolve(success(mockReactionTable));
+      if (name === 'Encounter Type - Daytime - Wild')
+        return Promise.resolve(success(mockEncounterTypeTable));
+      if (name === 'Regional - Generic Forest')
+        return Promise.resolve(success(mockRegionalTable));
+      if (name === 'Activity')
+        return Promise.resolve(success(mockActivityTable));
+      if (name === 'Reaction')
+        return Promise.resolve(success(mockReactionTable));
       return Promise.reject(new Error(`Unknown table: ${name}`));
     });
 
@@ -102,7 +110,7 @@ describe('EncounterGenerator Integration', () => {
       regionId: 'generic-forest',
       timeOfDay: 'Day' as const,
       terrain: 'Off-road' as const,
-      camping: false
+      camping: false,
     };
 
     const result = await generator.generateEncounter(context);
