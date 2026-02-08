@@ -20,7 +20,7 @@ describe('YamlTableRepository', () => {
     }
   });
 
-  it('should load Common - Animal table', async () => {
+  it('should load Test - Animal table', async () => {
     const result = await repo.getTable('Test - Animal');
     expect(result.kind).toBe('success');
     if (result.kind === 'success') {

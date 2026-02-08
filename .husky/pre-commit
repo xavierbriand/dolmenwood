@@ -1,0 +1,6 @@
+# Ensure the hook can interact with the user (read from TTY)
+if [ -t 1 ]; then
+  exec < /dev/tty
+fi
+
+pnpm tsx scripts/ip-check.ts
