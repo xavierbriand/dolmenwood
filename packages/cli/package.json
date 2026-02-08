@@ -20,8 +20,8 @@
     "inquirer": "^9.2.14"
   },
   "devDependencies": {
-    "typescript": "^5.9.3",
-    "vitest": "^4.0.18",
-    "@types/node": "^25.2.1"
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.2",
+    "@types/node": "^20.11.0"
   }
 }
