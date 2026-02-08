@@ -33,9 +33,8 @@ function toYaml(entries) {
     if (entry.morale) output += `  morale: ${entry.morale}\n`;
     if (entry.treasure) output += `  treasure: ${entry.treasure}\n`;
     if (entry.description) {
-      let desc = entry.description;
-      // Escape quotes
-      output += `  description: "${desc.replace(/"/g, '\\"')}"\n`;
+      // Use JSON.stringify to safely escape the string for YAML/JSON
+      output += `  description: ${JSON.stringify(entry.description)}\n`;
     }
     output += '\n';
   }
