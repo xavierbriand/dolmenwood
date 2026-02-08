@@ -108,7 +108,19 @@ export class EncounterGenerator {
   // Modified to support context for Regional lookups
   async generate(tableName: string, context?: GenerationContext): Promise<Result<EncounterResult>> {
     // 1. Load the table
-    const tableResult = await this.tableRepository.getTable(tableName);
+    let tableResult = await this.tableRepository.getTable(tableName);
+
+    // Fallback: Try localized table name if context is available
+    // e.g. "Common - Animal" -> "Common - Animal - High Wold"
+    if (tableResult.kind === 'failure' && context) {
+      const regionName = this.formatRegionName(context.regionId);
+      const localizedName = `${tableName} - ${regionName}`;
+      const localizedResult = await this.tableRepository.getTable(localizedName);
+      if (localizedResult.kind === 'success') {
+        tableResult = localizedResult;
+      }
+    }
+
     if (tableResult.kind === 'failure') {
       return failure(new Error(`Failed to load table '${tableName}': ${tableResult.error.message}`));
     }
