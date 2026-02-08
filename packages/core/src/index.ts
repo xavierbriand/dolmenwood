@@ -9,3 +9,4 @@ export * from './ports/TableRepository.js';
 export * from './utils/Result.js';
 export * from './engine/Dice.js';
 export * from './engine/TableRoller.js';
+export * from './services/EncounterGenerator.js';
