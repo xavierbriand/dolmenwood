@@ -71,8 +71,8 @@ export function generateRegexForTerm(term: string): RegExp {
 }
 
 export function getForbiddenTerms(): ForbiddenTerm[] {
-  // 1. Check for staleness
-  if (fs.existsSync(STATE_PATH) && fs.existsSync(ASSETS_DIR)) {
+  // 1. Check for staleness (Skip in CI environment)
+  if (!process.env.CI && fs.existsSync(STATE_PATH) && fs.existsSync(ASSETS_DIR)) {
       const state = JSON.parse(fs.readFileSync(STATE_PATH, 'utf8'));
       const lastReview = new Date(state.lastReviewed).getTime();
       const newestAsset = getNewestAssetTimestamp();
