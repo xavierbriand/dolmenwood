@@ -1,0 +1,99 @@
+import { Command } from 'commander';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { PATHS } from './config.js';
+import { extractText } from './steps/extract.js';
+import { parseCreatures } from './steps/transform.js';
+import { loadCreatures } from './steps/load.js';
+
+const program = new Command();
+
+program
+  .name('dolmenwood-etl')
+  .description('ETL pipeline for Dolmenwood Monster Book')
+  .version('0.0.1');
+
+program
+  .command('extract')
+  .description('Extract text from PDF to raw text file')
+  .action(async () => {
+    try {
+      console.log('Step 1: Extracting...');
+      await fs.mkdir(PATHS.TMP_DIR, { recursive: true });
+      const text = await extractText();
+      await fs.writeFile(PATHS.RAW_TEXT, text, 'utf-8');
+      console.log(`Extraction complete. Saved to: ${PATHS.RAW_TEXT}`);
+    } catch (error) {
+      console.error('Extraction failed:', error);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('transform')
+  .description('Transform raw text to intermediate JSON')
+  .action(async () => {
+    try {
+      console.log('Step 2: Transforming...');
+      const text = await fs.readFile(PATHS.RAW_TEXT, 'utf-8');
+      const creatures = parseCreatures(text);
+      await fs.writeFile(
+        PATHS.INTERMEDIATE_JSON,
+        JSON.stringify(creatures, null, 2),
+        'utf-8',
+      );
+      console.log(
+        `Transformation complete. Extracted ${creatures.length} creatures.`,
+      );
+      console.log(`Saved to: ${PATHS.INTERMEDIATE_JSON}`);
+    } catch (error) {
+      console.error('Transformation failed:', error);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('load')
+  .description('Validate and load JSON to YAML assets')
+  .action(async () => {
+    try {
+      console.log('Step 3: Loading...');
+      await loadCreatures();
+    } catch (error) {
+      console.error('Load failed:', error);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('all')
+  .description('Run full ETL pipeline')
+  .action(async () => {
+    try {
+      // 1. Extract
+      console.log('Step 1: Extracting...');
+      await fs.mkdir(PATHS.TMP_DIR, { recursive: true });
+      const text = await extractText();
+      await fs.writeFile(PATHS.RAW_TEXT, text, 'utf-8');
+
+      // 2. Transform
+      console.log('Step 2: Transforming...');
+      const creatures = parseCreatures(text);
+      await fs.writeFile(
+        PATHS.INTERMEDIATE_JSON,
+        JSON.stringify(creatures, null, 2),
+        'utf-8',
+      );
+
+      // 3. Load
+      console.log('Step 3: Loading...');
+      await loadCreatures();
+
+      console.log('\n🎉 Pipeline Complete!');
+    } catch (error) {
+      console.error('\n❌ Pipeline Failed:', error);
+      process.exit(1);
+    }
+  });
+
+program.parse();

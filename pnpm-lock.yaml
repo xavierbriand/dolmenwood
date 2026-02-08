@@ -23,6 +23,9 @@ importers:
       '@types/node':
         specifier: ^20.11.0
         version: 20.19.32
+      '@types/pdf-parse':
+        specifier: ^1.1.5
+        version: 1.1.5
       eslint:
         specifier: ^9.39.2
         version: 9.39.2
@@ -41,6 +44,9 @@ importers:
       js-yaml:
         specifier: ^4.1.1
         version: 4.1.1
+      pdf-parse:
+        specifier: ^1.1.1
+        version: 1.1.1
       prettier:
         specifier: ^3.2.5
         version: 3.8.1
@@ -122,6 +128,43 @@ importers:
       '@types/node':
         specifier: ^20.11.0
         version: 20.19.32
+      typescript:
+        specifier: ^5.3.3
+        version: 5.9.3
+      vitest:
+        specifier: ^1.2.2
+        version: 1.6.1(@types/node@20.19.32)
+
+  packages/etl:
+    dependencies:
+      commander:
+        specifier: ^11.1.0
+        version: 11.1.0
+      js-yaml:
+        specifier: ^4.1.0
+        version: 4.1.1
+      pdf-parse:
+        specifier: ^1.1.1
+        version: 1.1.1
+      zod:
+        specifier: ^3.22.4
+        version: 3.25.76
+    devDependencies:
+      '@dolmenwood/core':
+        specifier: workspace:*
+        version: link:../core
+      '@types/js-yaml':
+        specifier: ^4.0.9
+        version: 4.0.9
+      '@types/node':
+        specifier: ^20.11.0
+        version: 20.19.32
+      '@types/pdf-parse':
+        specifier: ^1.1.5
+        version: 1.1.5
+      tsx:
+        specifier: ^4.7.0
+        version: 4.21.0
       typescript:
         specifier: ^5.3.3
         version: 5.9.3
@@ -522,6 +565,9 @@ packages:
 
   '@types/node@20.19.32':
     resolution: {integrity: sha512-Ez8QE4DMfhjjTsES9K2dwfV258qBui7qxUsoaixZDiTzbde4U12e1pXGNu/ECsUIOi5/zoCxAQxIhQnaUQ2VvA==}
+
+  '@types/pdf-parse@1.1.5':
+    resolution: {integrity: sha512-kBfrSXsloMnUJOKi25s3+hRmkycHfLK6A09eRGqF/N8BkQoPUmaCr+q8Cli5FnfohEz/rsv82zAiPz/LXtOGhA==}
 
   '@types/through@0.0.33':
     resolution: {integrity: sha512-HsJ+z3QuETzP3cswwtzt2vEIiHBk/dCcHGhbmG5X3ecnwFD/lPrMpliGXxSCg03L9AhrdwA4Oz/qfspkDW+xGQ==}
@@ -1323,6 +1369,9 @@ packages:
   natural-compare@1.4.0:
     resolution: {integrity: sha512-OWND8ei3VtNC9h7V60qff3SVobHr996CTwgxubgyQYEpg290h9J0buyECNNJexkFm5sOajh5G116RYA1c8ZMSw==}
 
+  node-ensure@0.0.0:
+    resolution: {integrity: sha512-DRI60hzo2oKN1ma0ckc6nQWlHU69RH6xN0sjQTjMpChPfTYvKZdcQFfdYK2RWbJcKyUizSIy/l8OTGxMAM1QDw==}
+
   npm-run-path@5.3.0:
     resolution: {integrity: sha512-ppwTtiJZq0O/ai0z7yfudtBpWIoxM8yE6nHi1X47eFR2EWORqfbu6CnPlNsjeN683eT0qG6H/Pyf9fCcvjnnnQ==}
     engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
@@ -1410,6 +1459,10 @@ packages:
 
   pathval@1.1.1:
     resolution: {integrity: sha512-Dp6zGqpTdETdR63lehJYPeIOqpiNBNtc7BpWSLrOje7UaIsE5aY92r/AunQA7rsXvet3lrJ3JnZX29UPTKXyKQ==}
+
+  pdf-parse@1.1.1:
+    resolution: {integrity: sha512-v6ZJ/efsBpGrGGknjtq9J/oC8tZWq0KWL5vQrk2GlzLEQPUDB1ex+13Rmidl1neNN358Jn9EHZw5y07FFtaC7A==}
+    engines: {node: '>=6.8.1'}
 
   picocolors@1.1.1:
     resolution: {integrity: sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==}
@@ -2073,6 +2126,10 @@ snapshots:
   '@types/node@20.19.32':
     dependencies:
       undici-types: 6.21.0
+
+  '@types/pdf-parse@1.1.5':
+    dependencies:
+      '@types/node': 20.19.32
 
   '@types/through@0.0.33':
     dependencies:
@@ -3050,6 +3107,8 @@ snapshots:
 
   natural-compare@1.4.0: {}
 
+  node-ensure@0.0.0: {}
+
   npm-run-path@5.3.0:
     dependencies:
       path-key: 4.0.0
@@ -3151,6 +3210,13 @@ snapshots:
   pathe@2.0.3: {}
 
   pathval@1.1.1: {}
+
+  pdf-parse@1.1.1:
+    dependencies:
+      debug: 3.2.7
+      node-ensure: 0.0.0
+    transitivePeerDependencies:
+      - supports-color
 
   picocolors@1.1.1: {}
 
