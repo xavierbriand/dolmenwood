@@ -5,15 +5,23 @@ export function parseCreatures(text: string): Partial<Creature>[] {
 
   // 1. Extract Bestiary Section (Roughly)
   // We look for "Part Two" and "Part Three" as boundaries
-  const bestiaryMatch = text.match(
-    /part two\s*[|:]?\s*bestiary([\s\S]*?)part three/i,
-  );
-  const sectionContent = bestiaryMatch ? bestiaryMatch[1] : text;
+  const partTwoIndex = text.search(/part two\s*[|:]?\s*bestiary/i);
+  const partThreeIndex = text.search(/part three/i);
+
+  let sectionContent = text;
+  if (partTwoIndex !== -1) {
+    if (partThreeIndex !== -1 && partThreeIndex > partTwoIndex) {
+      sectionContent = text.substring(partTwoIndex, partThreeIndex);
+    } else {
+      sectionContent = text.substring(partTwoIndex);
+    }
+  }
 
   // 2. Identify Stats Block Pattern
   // Pattern: Level 6 AC 17 HP 6d8 (27) Saves D9 R10 H11 B12 S13
+  // Security: Avoid ambiguous regex. [\w]+ includes digits.
   const statsLineRegex =
-    /Level\s+(\d+|[\d\w]+)\s+AC\s+(\d+)\s+HP\s+([\dd]+).*?Saves\s+(.*)/i;
+    /Level\s+([\w]+)\s+AC\s+(\d+)\s+HP\s+([\dd]+).*?Saves\s+(.*)/i;
 
   // We split the text by lines to process linearly or find indices
   const lines = sectionContent.split(/\r?\n/);
@@ -186,11 +194,12 @@ function parseSecondaryStats(
   // Speed 50 Fly 100 Morale 11 XP 1,120
   // Or: Swim 40 Morale 8 XP 20
   // Regex to pull these out. We look for Movement keyword ... Morale
+  // Security: Avoid potential ReDoS with non-greedy match on long lines
   const speedMatch = line.match(
-    /(Speed|Swim|Fly|Burrow|Climb)\s+(.*?)\s+Morale/i,
+    /(?:Speed|Swim|Fly|Burrow|Climb)\s+([\w\s]+?)\s+Morale/i,
   );
   if (speedMatch) {
-    const rawMove = speedMatch[2].trim();
+    const rawMove = speedMatch[1].trim();
     // If the captured group is just a number, convert to number.
     // If it's "0 or 20", keep as string.
     // If it's complex like "50 Fly 100", the regex might capture "50 Fly 100" if greedy enough?
