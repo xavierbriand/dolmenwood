@@ -11,7 +11,8 @@
     "build": "pnpm -r build",
     "test": "pnpm -r test",
     "lint": "pnpm -r lint",
-    "start": "pnpm --filter @dolmenwood/cli start"
+    "start": "pnpm --filter @dolmenwood/cli start",
+    "prepare": "husky"
   },
   "keywords": [],
   "author": "BMad",
@@ -23,9 +24,12 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
+    "@types/js-yaml": "^4.0.9",
     "@types/node": "^20.11.0",
     "eslint": "^9.39.2",
     "globals": "^17.3.0",
+    "husky": "^9.1.7",
+    "js-yaml": "^4.1.1",
     "prettier": "^3.2.5",
     "tsx": "^4.7.0",
     "typescript": "^5.3.3",
