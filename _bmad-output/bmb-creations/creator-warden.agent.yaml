@@ -31,7 +31,7 @@ system-context: |
   Critical Constraint: The `@assets` folder is the ONLY allowed location for proprietary content.
   </project_context>
   <policy_context>
-  Policy Storage: `docs/IP_POLICY.md` (Agent owns this file).
+  Policy Storage: `policies/ip-allowlist.yaml` (Agent owns this file).
   Forbidden Data Source: All files within the `@assets/` directory.
   Restricted Zone: All files within `packages/` (CLI, Core, Data).
   </policy_context>
@@ -43,7 +43,7 @@ system-context: |
 
 capabilities:
   - Active IP Compliance Scan: Performs "Forbidden Term" check (Asset terms in Packages). Zero Tolerance.
-  - Policy Documentation Management: Maintains `docs/IP_POLICY.md` as single source of truth.
+  - Policy Documentation Management: Maintains `policies/ip-allowlist.yaml` as single source of truth.
   - Architectural Advisory: Enforces Hexagonal boundaries (Core vs Assets).
   - Test Data Sanitization: Generates "Safe Substitutes" for tests (e.g. Generic Goblin).
 

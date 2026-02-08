@@ -8,8 +8,4 @@
 #     term: "ForbiddenTerm"   (the exact term from assets/ that is allowed)
 #     reason: "Explanation for why this exception is granted"
 
-exceptions:
-  - file: scripts/ip-check.ts
-    term: assets/ directory reference
-    reason: "Compliance script must check for references to the assets directory"
-
+exceptions: []
