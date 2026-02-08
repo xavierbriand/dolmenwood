@@ -18,7 +18,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 ## Technology Stack & Versions
 
 - **Core:** Node.js (LTS), TypeScript 5.x
-- **Architecture:** Monorepo (pnpm workspaces: `@deg/core`, `@deg/data`, `@deg/cli`)
+- **Architecture:** Monorepo (pnpm workspaces: `@dolmenwood/core`, `@dolmenwood/data`, `@dolmenwood/cli`)
 - **Type System:** **Strict ESM** (`"type": "module"`)
   - **CRITICAL:** All local imports MUST include `.js` extension (e.g., `import { x } from './x.js'`).
   - **TS Config:** `"module": "NodeNext"`, `"moduleResolution": "NodeNext"`.
@@ -39,7 +39,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - **TypeScript 5.x Configuration:**
   - **Type Imports:** Use `import type` explicitly (enforce `verbatimModuleSyntax: true`).
   - **Target:** `ES2022` (utilize top-level await).
-  - **Exports:** Workspace packages MUST use `package.json` "exports" field; DO NOT deep-link (e.g., no `@deg/core/src/foo`).
+  - **Exports:** Workspace packages MUST use `package.json` "exports" field; DO NOT deep-link (e.g., no `@dolmenwood/core/src/foo`).
 
 - **Zod & Types:**
   - **Inference:** Derive TypeScript types from Zod schemas (`z.infer<typeof X>`).
@@ -48,7 +48,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 ### Architecture & Framework Rules
 
 - **Hexagonal Wiring (Manual Composition):**
-  - **No DI Containers:** Use constructor injection in `@deg/cli/src/index.ts`.
+  - **No DI Containers:** Use constructor injection in `@dolmenwood/cli/src/index.ts`.
   - **Composition Root:** `CLI` instantiates `Data` adapters -> Injects into `Core` -> Runs `Command`.
 
 - **Core Purity:**
@@ -58,8 +58,8 @@ _This file contains critical rules and patterns that AI agents must follow when 
 
 - **State Management:**
   - **Port Pattern:** `SessionPersistence` is an interface in Core.
-  - **Implementation:** `FileSessionRepository` in `@deg/data`.
-  - **Config:** CLI determines the file path (`~/.deg/session.json`); Core never sees paths.
+  - **Implementation:** `FileSessionRepository` in `@dolmenwood/data`.
+  - **Config:** CLI determines the file path (`~/.dolmenwood/session.json`); Core never sees paths.
 
 - **CLI Pattern (Hybrid):**
   - **Thin Handlers:** `action()` maps input -> Core calls -> Console output.
@@ -70,7 +70,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - **Strategies:**
   - **Unit (`.test.ts`):** Verify internal logic/helpers. Colocated with code. Mocks EVERYTHING.
   - **BDD (`.feature`):** Verify **Core Use Cases** (Public API). Tests behavior, not implementation.
-  - **Integration:** Tests in `@deg/data` verify actual File I/O.
+  - **Integration:** Tests in `@dolmenwood/data` verify actual File I/O.
 
 - **Mocking & RNG:**
   - **Strict Injection:** `DiceEngine` must accept a `RandomProvider` interface.
@@ -113,8 +113,8 @@ _This file contains critical rules and patterns that AI agents must follow when 
   - **Linking:** Use `tsc -b -w` (Build Watch) for live updates. DO NOT use `npm link`.
 
 - **Local Execution:**
-  - **Pattern:** Run local binary directly: `./packages/cli/bin/deg.js`.
-  - **Filter:** Use `pnpm --filter @deg/cli run start`.
+  - **Pattern:** Run local binary directly: `./packages/cli/bin/dolmenwood.js`.
+  - **Filter:** Use `pnpm --filter @dolmenwood/cli run start`.
 
 - **CI/CD (GitHub Actions):**
   - **Trigger:** On `push` to branches and `pull_request`.
