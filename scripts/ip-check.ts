@@ -218,7 +218,7 @@ function scanCodebase(forbiddenTerms: ForbiddenTerm[]): Violation[] {
     if (violations.length > 0) {
       console.error(`\n⚠️  Potential IP Violations Found: ${violations.length}`);
       
-      const isInteractive = process.stdout.isTTY;
+      const isInteractive = process.stdin.isTTY && process.stdout.isTTY && !process.env.CI;
       const confirmedViolations: Violation[] = [];
 
       for (const v of violations) {
