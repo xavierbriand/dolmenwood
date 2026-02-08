@@ -2,7 +2,7 @@ import { TableRepository } from '../ports/TableRepository.js';
 import { RandomProvider } from '../ports/RandomProvider.js';
 import { Dice } from '../engine/Dice.js';
 import { Creature } from '../schemas/encounter.js';
-import { RegionTable, TableEntry } from '../schemas/tables.js';
+import { TableEntry } from '../schemas/tables.js';
 import { Result, success, failure } from '../utils/Result.js';
 
 export type EncounterResult = 
@@ -74,7 +74,7 @@ export class EncounterGenerator {
       } else {
         count = parseInt(countExpression);
       }
-    } catch (e) {
+    } catch {
       console.warn(`Failed to parse count '${countExpression}' for ${creature.name}, defaulting to 1.`);
     }
 
