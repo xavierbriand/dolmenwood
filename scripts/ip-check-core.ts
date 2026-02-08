@@ -11,18 +11,8 @@ const ROOT_DIR = path.resolve(__dirname, '..');
 const ASSETS_DIR = path.join(ROOT_DIR, 'assets');
 const IGNORED_FILES = ['.DS_Store', 'node_modules'];
 
-// Terms that are found in assets but are considered structural/architectural
-// and are therefore safe to use in code (e.g. table names used for lookups).
-const SAFE_TERMS = [
-  'Activity',
-  'Reaction',
-];
-
-const SAFE_PREFIXES = [
-  'Encounter Type -',
-  'Common -',
-  'Regional -'
-];
+const DENYLIST_PATH = path.join(ROOT_DIR, 'policies', 'ip-denylist.yaml');
+const STATE_PATH = path.join(ROOT_DIR, 'policies', 'ip-state.json');
 
 export interface ForbiddenTerm {
   original: string;
@@ -55,6 +45,18 @@ function getAllFiles(dir: string, fileList: string[] = []): string[] {
   return fileList;
 }
 
+function getNewestAssetTimestamp(): number {
+  if (!fs.existsSync(ASSETS_DIR)) return 0;
+  let maxTime = 0;
+  const files = fs.readdirSync(ASSETS_DIR);
+  files.forEach(file => {
+      const fullPath = path.join(ASSETS_DIR, file);
+      const stat = fs.statSync(fullPath);
+      if (stat.mtimeMs > maxTime) maxTime = stat.mtimeMs;
+  });
+  return maxTime;
+}
+
 export function generateRegexForTerm(term: string): RegExp {
   if (/[\s\-_]/.test(term)) {
     const parts = term.split(/[\s\-_]+/);
@@ -69,36 +71,40 @@ export function generateRegexForTerm(term: string): RegExp {
 }
 
 export function getForbiddenTerms(): ForbiddenTerm[] {
-  const terms: Set<string> = new Set();
-  const assetFiles = getAllFiles(ASSETS_DIR);
-  
-  assetFiles.forEach((file) => {
-    if (!file.endsWith('.yaml') && !file.endsWith('.yml')) return;
-    try {
-      const content = fs.readFileSync(file, 'utf8');
-      const data = yaml.load(content);
-      if (Array.isArray(data)) {
-        data.forEach((item: unknown) => {
-          if (typeof item === 'object' && item !== null && 'name' in item) {
-            const namedItem = item as { name: unknown };
-            if (typeof namedItem.name === 'string') terms.add(namedItem.name);
-          }
-        });
-      } else if (typeof data === 'object' && data !== null) {
-        const obj = data as { name?: unknown };
-        if (obj.name && typeof obj.name === 'string') terms.add(obj.name);
+  // 1. Check for staleness
+  if (fs.existsSync(STATE_PATH) && fs.existsSync(ASSETS_DIR)) {
+      const state = JSON.parse(fs.readFileSync(STATE_PATH, 'utf8'));
+      const lastReview = new Date(state.lastReviewed).getTime();
+      const newestAsset = getNewestAssetTimestamp();
+      
+      // Allow 1 second buffer for file system variances
+      if (newestAsset > lastReview + 1000) {
+          console.error('❌ IP Safety Check Failed: Assets have been modified since the last IP Review.');
+          console.error('   Please run `npm run ip:scan` to update the denylist.');
+          process.exit(1);
       }
-    } catch (e) {
-      console.warn(`⚠️  Failed to parse ${file}:`, e);
-    }
-  });
+  } else if (fs.existsSync(ASSETS_DIR)) {
+      // Assets exist but no state file -> never reviewed
+      console.warn('⚠️  IP State file missing. Assuming first run or unverified state.');
+  }
 
-  return Array.from(terms)
-    .filter(t => t.length > 3)
-    .filter(t => !SAFE_TERMS.includes(t))
-    .filter(t => !SAFE_PREFIXES.some(prefix => t.startsWith(prefix)))
-    .map(t => ({
-      original: t,
-      regex: generateRegexForTerm(t)
-    }));
+  // 2. Load Denylist
+  if (!fs.existsSync(DENYLIST_PATH)) {
+      console.warn('⚠️  No IP Denylist found. Skipping checks.');
+      return [];
+  }
+
+  try {
+      const content = fs.readFileSync(DENYLIST_PATH, 'utf8');
+      const data = yaml.load(content) as { terms: string[] };
+      const terms = data.terms || [];
+      
+      return terms.map(t => ({
+          original: t,
+          regex: generateRegexForTerm(t)
+      }));
+  } catch (e) {
+      console.error('❌ Failed to load IP Denylist:', e);
+      process.exit(1);
+  }
 }

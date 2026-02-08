@@ -11,6 +11,7 @@
     "build": "pnpm -r build",
     "test": "pnpm -r test && vitest run scripts/",
     "lint": "pnpm -r lint",
+    "ip:scan": "tsx scripts/ip-scan.ts",
     "start": "pnpm --filter @dolmenwood/cli start",
     "prepare": "husky"
   },
