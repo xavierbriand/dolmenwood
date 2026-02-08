@@ -1,6 +1,6 @@
 import { TableRepository } from '../ports/TableRepository.js';
 import { RandomProvider } from '../ports/RandomProvider.js';
-import { Dice } from '../engine/Dice.js';
+import { DiceRoll, Die } from '../engine/Dice.js';
 import { Creature, Encounter, GenerationContext } from '../schemas/encounter.js';
 import { TableEntry } from '../schemas/tables.js';
 import { Result, success, failure } from '../utils/Result.js';
@@ -48,7 +48,7 @@ export class EncounterGenerator {
       if (reactionRes) encounter.details.reaction = reactionRes;
 
       // Distance
-      const distDice = new Dice(2, 6, 0);
+      const distDice = new DiceRoll(2, new Die(6), 0);
       const distRoll = distDice.roll(this.random);
       // Outdoors: 30', Dungeon: 10'
       // Context doesn't explicitly have Dungeon yet, assuming Outdoors for now.
@@ -56,7 +56,7 @@ export class EncounterGenerator {
       encounter.details.distance = `${distRoll * distMultiplier} feet`;
 
       // Surprise
-      const d6 = new Dice(1, 6, 0);
+      const d6 = new DiceRoll(1, new Die(6), 0);
       const playerSurprise = d6.roll(this.random) <= 2;
       const monsterSurprise = d6.roll(this.random) <= 2;
       if (playerSurprise && monsterSurprise) encounter.details.surprise = 'Both sides surprised';
@@ -113,7 +113,7 @@ export class EncounterGenerator {
     const table = tableResult.data;
 
     // 2. Roll on the table
-    const dice = Dice.parse(table.die);
+    const dice = DiceRoll.parse(table.die);
     const roll = dice.roll(this.random);
 
     // 3. Find the entry
@@ -158,7 +158,7 @@ export class EncounterGenerator {
     let count = 1;
     try {
       if (countExpression.includes('d')) {
-        count = Dice.parse(countExpression).roll(this.random);
+        count = DiceRoll.parse(countExpression).roll(this.random);
       } else {
         count = parseInt(countExpression);
       }
