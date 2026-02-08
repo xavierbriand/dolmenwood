@@ -2,6 +2,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { EncounterGenerator } from './EncounterGenerator.js';
 import { TableRepository } from '../ports/TableRepository.js';
+import { CreatureRepository } from '../ports/CreatureRepository.js';
 import { RandomProvider } from '../ports/RandomProvider.js';
 import { success } from '../utils/Result.js';
 import { Table } from '../schemas/tables.js';
@@ -10,7 +11,11 @@ import { Creature } from '../schemas/encounter.js';
 // Mock implementations
 class MockTableRepository implements TableRepository {
   getTable = vi.fn();
-  getCreature = vi.fn();
+}
+
+class MockCreatureRepository implements CreatureRepository {
+  getByName = vi.fn();
+  getAll = vi.fn();
 }
 
 class MockRandomProvider implements RandomProvider {
@@ -20,13 +25,15 @@ class MockRandomProvider implements RandomProvider {
 
 describe('EncounterGenerator Integration', () => {
   let generator: EncounterGenerator;
-  let repository: MockTableRepository;
+  let tableRepository: MockTableRepository;
+  let creatureRepository: MockCreatureRepository;
   let random: MockRandomProvider;
 
   beforeEach(() => {
-    repository = new MockTableRepository();
+    tableRepository = new MockTableRepository();
+    creatureRepository = new MockCreatureRepository();
     random = new MockRandomProvider();
-    generator = new EncounterGenerator(repository, random);
+    generator = new EncounterGenerator(tableRepository, creatureRepository, random);
   });
 
   it('should generate a full encounter with creature, activity, and reaction', async () => {
@@ -70,7 +77,7 @@ describe('EncounterGenerator Integration', () => {
     };
 
     // 2. Setup Mock Behavior
-    repository.getTable.mockImplementation((name) => {
+    tableRepository.getTable.mockImplementation((name) => {
       if (name === 'Encounter Type - Daytime - Wild') return Promise.resolve(success(mockEncounterTypeTable));
       if (name === 'Regional - Generic Forest') return Promise.resolve(success(mockRegionalTable));
       if (name === 'Activity') return Promise.resolve(success(mockActivityTable));
@@ -78,7 +85,7 @@ describe('EncounterGenerator Integration', () => {
       return Promise.reject(new Error(`Unknown table: ${name}`));
     });
 
-    repository.getCreature.mockResolvedValue(success(mockMossling));
+    creatureRepository.getByName.mockResolvedValue(success(mockMossling));
 
     // Mock Dice Rolls
     // Roll 1: Encounter Type (1d8) -> 5

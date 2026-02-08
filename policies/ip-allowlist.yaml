@@ -19,10 +19,19 @@ exceptions:
   - file: packages/core/src/services/EncounterGenerator.integration.spec.ts
     term: Mossling
     reason: "Integration test mocking a specific creature"
+  - file: packages/core/src/services/EncounterGenerator.integration.spec.ts
+    term: Daytime - Wild
+    reason: "Mock table name"
     
   - file: packages/core/src/services/EncounterGenerator.ts
     term: High Wold
     reason: "Comment explaining slug conversion logic"
+  - file: packages/core/src/services/EncounterGenerator.ts
+    term: Nighttime - Fire
+    reason: "Comment explaining table structure"
+  - file: packages/core/src/services/EncounterGenerator.ts
+    term: Nighttime - No Fire
+    reason: "Comment explaining table structure"
 
   - file: scripts/ip-scan.ts
     term: High Wold
@@ -34,3 +43,15 @@ exceptions:
   - file: scripts/verify-data.ts
     term: Aldweald
     reason: "Verification script checking asset loading"
+  - file: scripts/verify-data.ts
+    term: Daytime - Road
+    reason: "Table verification"
+  - file: scripts/verify-data.ts
+    term: Daytime - Wild
+    reason: "Table verification"
+  - file: scripts/verify-data.ts
+    term: Nighttime - Fire
+    reason: "Table verification"
+  - file: scripts/verify-data.ts
+    term: Nighttime - No Fire
+    reason: "Table verification"

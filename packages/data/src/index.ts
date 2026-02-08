@@ -5,3 +5,4 @@ export function dataHello(): string {
 }
 
 export * from './repositories/YamlTableRepository.js';
+export * from './repositories/YamlCreatureRepository.js';

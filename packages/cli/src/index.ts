@@ -4,7 +4,7 @@ import chalk from 'chalk';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { EncounterGenerator, DefaultRandomProvider } from '@dolmenwood/core';
-import { YamlTableRepository } from '@dolmenwood/data';
+import { YamlTableRepository, YamlCreatureRepository } from '@dolmenwood/data';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -27,9 +27,10 @@ program
   .action(async (tableName) => {
     try {
       // 1. Setup Dependencies
-      const repo = new YamlTableRepository(ASSETS_PATH);
+      const tableRepo = new YamlTableRepository(ASSETS_PATH);
+      const creatureRepo = new YamlCreatureRepository(ASSETS_PATH);
       const random = new DefaultRandomProvider();
-      const generator = new EncounterGenerator(repo, random);
+      const generator = new EncounterGenerator(tableRepo, creatureRepo, random);
 
       // 2. Generate
       console.log(chalk.blue(`Rolling on table: ${chalk.bold(tableName)}...`));

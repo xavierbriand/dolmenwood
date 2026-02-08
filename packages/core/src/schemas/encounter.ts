@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { CreatureSchema } from './creature.js';
 
 export const GenerationContextSchema = z.object({
   regionId: z.string(),
@@ -22,23 +23,9 @@ export const EncounterTypeSchema = z.enum([
   'Creature', // Added to satisfy test "valid EncounterType"
 ]);
 
-export const CreatureSchema = z.object({
-  name: z.string(),
-  level: z.number().or(z.string()),
-  alignment: z.string(), // 'Chaotic', 'Neutral', 'Lawful' etc.
-  xp: z.number(),
-  numberAppearing: z.string(),
-  armourClass: z.number(),
-  movement: z.number().or(z.string()),
-  hitDice: z.string(),
-  attacks: z.array(z.string()),
-  morale: z.number(),
-  treasure: z.string().optional(),
-  save: z.string().optional(),
-  description: z.string().optional(),
-});
+export type { Creature } from './creature.js';
+export { CreatureSchema } from './creature.js';
 
-export type Creature = z.infer<typeof CreatureSchema>;
 export type EncounterType = z.infer<typeof EncounterTypeSchema>;
 
 export const EncounterSchema = z.object({
