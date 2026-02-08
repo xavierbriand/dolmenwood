@@ -16,7 +16,13 @@ class MockTableRepository implements TableRepository {
 
   async getTable(name: string): Promise<Result<RegionTable>> {
     const table = this.tables.get(name);
-    return table ? success(table) : failure(new Error(`Table '${name}' not found`));
+    return table
+      ? success(table)
+      : failure(new Error(`Table '${name}' not found`));
+  }
+
+  async listTables(): Promise<Result<RegionTable[]>> {
+    return success(Array.from(this.tables.values()));
   }
 }
 
@@ -32,7 +38,7 @@ class MockCreatureRepository implements CreatureRepository {
       movement: 30,
       hitDice: '1d6',
       attacks: ['None'],
-      morale: 7
+      morale: 7,
     });
   }
 
@@ -42,44 +48,42 @@ class MockCreatureRepository implements CreatureRepository {
 }
 
 class MockRandom implements RandomProvider {
-  next(): number { return 0.5; }
+  next(): number {
+    return 0.5;
+  }
 }
 
 describe('EncounterGenerator - Recursive & Contextual', () => {
   it('should fallback to localized table if base table not found', async () => {
     const tableRepo = new MockTableRepository();
     const generator = new EncounterGenerator(
-      tableRepo, 
-      new MockCreatureRepository(), 
-      new MockRandom()
+      tableRepo,
+      new MockCreatureRepository(),
+      new MockRandom(),
     );
 
-    // Setup: 
+    // Setup:
     // Root Table refers to "Common - Animal"
     // "Common - Animal" does NOT exist.
     // "Common - Animal - Test Region" DOES exist.
-    
+
     tableRepo.addTable({
       name: 'Root Table',
       die: '1d6',
-      entries: [
-        { min: 1, max: 6, type: 'Animal', ref: 'Common - Animal' }
-      ]
+      entries: [{ min: 1, max: 6, type: 'Animal', ref: 'Common - Animal' }],
     });
 
     tableRepo.addTable({
       name: 'Common - Animal - Test Region',
       die: '1d6',
-      entries: [
-        { min: 1, max: 6, type: 'Creature', ref: 'Wolf' }
-      ]
+      entries: [{ min: 1, max: 6, type: 'Creature', ref: 'Wolf' }],
     });
 
     const result = await generator.generate('Root Table', {
       regionId: 'test-region',
       timeOfDay: 'Day',
       terrain: 'Off-road',
-      camping: false
+      camping: false,
     });
 
     expect(result.kind).toBe('success');

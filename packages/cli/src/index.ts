@@ -16,6 +16,7 @@ import {
   JsonSessionRepository,
 } from '@dolmenwood/data';
 import { createSessionCommand } from './commands/session.js';
+import { InteractiveService } from './services/InteractiveService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -40,6 +41,11 @@ const sessionRepo = new JsonSessionRepository(SESSION_DIR);
 const random = new DefaultRandomProvider();
 const generator = new EncounterGenerator(tableRepo, creatureRepo, random);
 const sessionService = new SessionService(sessionRepo);
+const interactive = new InteractiveService(
+  generator,
+  sessionService,
+  tableRepo,
+);
 
 // Register Commands
 program.addCommand(createSessionCommand(sessionService));
@@ -164,4 +170,9 @@ program
     }
   });
 
-program.parse();
+// Handle Default Interactive Mode
+if (process.argv.length <= 2) {
+  interactive.start();
+} else {
+  program.parse();
+}
