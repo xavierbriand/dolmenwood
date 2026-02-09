@@ -165,7 +165,7 @@ packages/etl/
   - Action: Investigate `parseCompactSecondaryStats` or Adventurer parsing logic. Ensure XP/Move/HD are correctly extracted for the Cleric entry.
   - Notes: 'Cleric' is currently skipped due to validation errors.
 
-- [ ] Task 6.3: Implement Data Consistency Check (Encounters vs Creatures)
+- [x] Task 6.3: Implement Data Consistency Check (Encounters vs Creatures)
   - File: `packages/etl/src/steps/validate-refs.ts` (New)
   - Action: Implement logic to scan encounter tables in `assets/` (e.g., `encounters.yaml`) for creature references. Compare against loaded `creatures.yaml`.
   - Notes: Report warnings for any creature listed in an encounter table that is missing from the generated creature data. This serves as a "coverage report" to identify parsing gaps. Use `chalk` for colorized output.

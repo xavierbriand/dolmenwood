@@ -21,4 +21,7 @@ export const PATHS = {
 
   // Target Asset File
   CREATURES_YAML: path.join(PROJECT_ROOT, 'assets/creatures.yaml'),
+
+  // Encounter Tables (for consistency check)
+  ENCOUNTERS_DIR: path.join(PROJECT_ROOT, 'assets'),
 };

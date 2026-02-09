@@ -4,6 +4,7 @@ import { PATHS } from './config.js';
 import { extractText } from './steps/extract.js';
 import { parseCreatures } from './steps/transform.js';
 import { loadCreatures } from './steps/load.js';
+import { validateReferences } from './steps/validate-refs.js';
 
 const program = new Command();
 
@@ -75,10 +76,20 @@ program
     try {
       console.log('Step 3: Loading...');
       await loadCreatures();
+
+      // Auto-run validation after load
+      await validateReferences();
     } catch (error) {
       console.error('Load failed:', error);
       process.exit(1);
     }
+  });
+
+program
+  .command('verify')
+  .description('Check consistency between Encounters and Bestiary')
+  .action(async () => {
+    await validateReferences();
   });
 
 program
@@ -109,6 +120,9 @@ program
       // 3. Load
       console.log('Step 3: Loading...');
       await loadCreatures();
+
+      // 4. Verify
+      await validateReferences();
 
       console.log('\n🎉 Pipeline Complete!');
     } catch (error) {
