@@ -172,19 +172,30 @@ packages/etl/
 
 ### Phase 7: Hardening
 
-- [ ] Task 7.1: Noise Removal and Header/Footer Stripping
+- [ ] Task 7.1: Noise Removal and Filtering
   - File: `packages/etl/src/steps/transform.ts`
-  - Action: Implement pre-processing to strip known PDF artifacts like page numbers ("PAGE 42") and repeating headers before splitting text into creature blocks.
-  - Notes: Reduces risk of headers breaking stat block regex.
+  - Action: Implement filtering to remove non-creature artifacts identified in the verification report (e.g., 'Basic Details', 'Pilgrim Destinations', 'Fortune-telling Method').
+  - Notes: Also strip page headers/footers if they persist in the name field.
 
 - [ ] Task 7.2: Type Conversion Safety
   - File: `packages/etl/src/steps/transform.ts`
   - Action: Explicitly handle string-to-number conversion for schema fields (AC, HD, Move, Morale) with fallbacks (e.g., `parseInt(val) || 0`) to prevent schema validation failures on coerced types.
   - Notes: Ensure compatibility with Zod schema expectations.
 
-- [ ] Task 7.3: Add Chalk for CLI Output
-  - File: `packages/etl/package.json`
-  - Action: Add `chalk` as dependency. Update `validate-refs.ts` and `load.ts` to use colorized output for success/warning/error messages.
+- [ ] Task 7.3: Add Chalk for CLI Output (Partially Complete)
+  - File: `packages/etl/src/steps/load.ts`
+  - Action: Update `load.ts` to use colorized output for success/warning/error messages, matching the style of `validate-refs.ts`.
+  - Notes: `validate-refs.ts` already uses chalk.
+
+- [ ] Task 7.4: Name Normalization (Dashes & Case)
+  - File: `packages/etl/src/steps/transform.ts`
+  - Action: Normalize dashes (convert em-dashes `—` to standard hyphens `-`) and fix capitalization for ALL CAPS names (e.g., `SNAKE—ADDER` -> `Snake-Adder`).
+  - Notes: This addresses the mismatch between PDF formatting and Encounter Tables.
+
+- [ ] Task 7.5: Enhanced Kerning Cleaning
+  - File: `packages/etl/src/steps/transform.ts`
+  - Action: Improve `cleanKerning` to handle comma-separated names and specific capitalized clusters (e.g., `Bat,   Va Mpir E` -> `Bat, Vampire`).
+  - Notes: Fixes the `Rat, Giant` and `Fly, Giant` issues.
 
 ## Acceptance Criteria
 
