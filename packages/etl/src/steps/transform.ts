@@ -210,6 +210,9 @@ function cleanKerning(text: string): string {
     iterations++;
   }
 
+  // Specific fix for "VA MPIR E" (chunks)
+  current = current.replace(/VA\s+MPIR\s+E/i, 'VAMPIRE');
+
   return current;
 }
 
