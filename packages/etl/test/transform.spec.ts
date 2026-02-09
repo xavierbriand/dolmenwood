@@ -176,4 +176,57 @@ Monster Rumours
     const dog = creatures.find((c) => c.name === 'Test, Hound');
     expect(dog).toBeDefined();
   });
+
+  it('should parse Compact Stat Blocks with Kerning Issues (Animals)', () => {
+    const SAMPLE_TEXT_COMPACT = `
+Part Three Appendices
+Animals
+
+BAT, V A M P I R E
+Carnivorous giant bats.
+Neutral
+Level 2 AC 13 HP 2d8 (9) Saves D12 R13 H14 B15 S16
+Att Bite (+1, 1d4 + unconsciousness) Speed 10 Fly 60
+Morale 8 XP 50 Enc 1d10
+
+DOG, W I L D
+Wild dogs that hunt in packs.
+Neutral
+Level 1 AC 13 HP 1d8 (4) Saves D12 R13 H14 B15 S16
+Att Bite (+1, 1d4) Speed 50
+Morale 7 XP 10 Enc 2d6
+
+Monster Rumours
+`;
+    const creatures = parseCreatures(SAMPLE_TEXT_COMPACT);
+
+    // Should find Bat, Vampire and Dog, Wild
+    expect(creatures.length).toBeGreaterThanOrEqual(2);
+
+    const bat = creatures.find((c) => c.name === 'Bat, Vampire');
+    expect(bat).toBeDefined();
+    if (bat) {
+      expect(bat.level).toBe(2);
+      expect(bat.armourClass).toBe(13);
+      expect(bat.hitDice).toBe('2d8');
+      expect(bat.save).toBe('D12 R13 H14 B15 S16');
+      expect(bat.attacks).toEqual(['Bite (+1, 1d4 + unconsciousness)']);
+      expect(bat.movement).toBe('10 Fly 60');
+      expect(bat.morale).toBe(8);
+      expect(bat.xp).toBe(50);
+      expect(bat.numberAppearing).toBe('1d10');
+    }
+
+    const dog = creatures.find((c) => c.name === 'Dog, Wild');
+    expect(dog).toBeDefined();
+    if (dog) {
+      expect(dog.level).toBe(1);
+      expect(dog.attacks).toEqual(['Bite (+1, 1d4)']);
+      expect(dog.movement).toBe(50);
+    }
+
+    // Ensure "AC" is NOT picked up as a creature name
+    const acCreature = creatures.find((c) => c.name === 'AC');
+    expect(acCreature).toBeUndefined();
+  });
 });

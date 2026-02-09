@@ -73,8 +73,6 @@ function parseAdventurers(text: string): Partial<Creature>[] {
 
   // Regex for Level 1 line
   // e.g., "Level 1 Bard (Rhymer) AC 12 HP..."
-  // Capture group 1: Class Name (e.g. Bard)
-  // We need to be careful matching "Level 1" but not "Level 13" (though unlikely for adventurers here)
   const level1Regex = /Level\s+1\s+([A-Za-z]+).*?(?:AC|HP)/i;
 
   for (let i = 0; i < lines.length; i++) {
@@ -82,14 +80,6 @@ function parseAdventurers(text: string): Partial<Creature>[] {
     const match = line.match(level1Regex);
 
     if (match) {
-      // We found a Level 1 line. This line typically contains the stats too.
-      // Use the standard stats parser on this line?
-      // The standard parser looks for `Level X AC Y ...`
-      // Our line looks like `Level 1 Bard ... AC ...`
-      // The standard regex `Level\s+([\w]+)\s+AC` expects `Level 5 AC`.
-      // Here we have `Level 1 Class AC`.
-      // So we need to normalize or parse manually.
-
       const className = match[1];
       const creature: Partial<Creature> = {
         name: className,
@@ -97,28 +87,25 @@ function parseAdventurers(text: string): Partial<Creature>[] {
         level: 1,
       };
 
-      // Extract stats from the rest of the line
-      // "Level 1 Bard (Rhymer) AC 6 HP 1d6 (4) Saves D13 W14 P13 B16 S15"
-      // AC capture
-      const acMatch = line.match(/AC\s+(\d+)/);
-      if (acMatch) creature.armourClass = Number(acMatch[1]);
+      // Use the compact stats parser
+      // Line 1 contains basic stats
+      const line1Regex =
+        /AC\s+(\d+)\s+HP\s+([\dd]+)\s*(?:\(\d+\))?\s+Saves\s+(.*)$/i;
+      const statsMatch = line.match(line1Regex);
 
-      // HP capture
-      const hpMatch = line.match(/HP\s+([\dd]+)/);
-      if (hpMatch) creature.hitDice = hpMatch[1];
+      if (statsMatch) {
+        creature.armourClass = Number(statsMatch[1]);
+        creature.hitDice = statsMatch[2];
+        creature.save = statsMatch[3].trim();
+      }
 
-      // Saves capture
-      const saveMatch = line.match(/Saves\s+(.*)$/);
-      if (saveMatch) creature.save = saveMatch[1].trim();
+      // Consume subsequent lines for compact stats
+      // We start looking from i (current line) because parseCompactStats expects lines array
+      // But parseCompactStats assumes line 1 is "Level X AC Y".
+      // Adventurers line 1 is "Level 1 Class AC Y".
+      // So we handle line 1 manually above, and use a helper for line 2+
 
-      // Look ahead for Attacks, Speed, etc. similar to standard parser?
-      // Adventurers block in text usually has:
-      // Level 1 ...
-      // Attacks ...
-      // Speed ...
-      // So we can use the look-ahead logic from parseBestiary.
-
-      parseForwardStats(lines, i, creature);
+      parseCompactSecondaryStats(lines, i, creature);
 
       creatures.push(creature);
     }
@@ -130,39 +117,24 @@ function parseEverydayMortals(text: string): Partial<Creature>[] {
   const creatures: Partial<Creature>[] = [];
 
   // 1. Extract the shared "Everyday Mortal" stats.
-  // We can use the standard parser on the whole text, find "Everyday Mortal".
   const candidates = parseBestiary(text);
   const template = candidates.find(
     (c) => c.name === 'Everyday Mortal' || c.name === 'Everyday mortal',
   );
 
   if (!template) {
-    // Fallback or error? For now, return empty if template not found.
     return [];
   }
 
   // 2. Find Job Headers.
-  // Jobs are ALL CAPS lines.
-  // Exclude "EVERYDAY MORTAL" if it appears as a header.
   const lines = text.split(/\r?\n/);
   const jobRegex = /^[A-Z\s-]+$/; // All caps, spaces, hyphens
-
-  // We need to filter out noise like empty lines or "Level X" lines if they somehow match.
-  // And ignore the stat block headers itself if they are all caps.
 
   for (const line of lines) {
     const trimmed = line.trim();
     if (!trimmed) continue;
 
-    // Heuristics for a Job Header:
-    // - All Caps
-    // - Not a stat line keyword (AC, HP, XP, etc - though those aren't usually lines on their own)
-    // - Not "EVERYDAY MORTAL" (the template name)
-    // - Length check?
-
     if (jobRegex.test(trimmed) && trimmed !== 'EVERYDAY MORTAL') {
-      // Exclude lines that are part of the stat block text if any match All Caps (unlikely for description text)
-      // Also exclude headers like "ATTACKS", "TRAITS" if they exist in this section (unlikely).
       if (['ATTACKS', 'TRAITS', 'NAMES', 'ENCOUNTERS'].includes(trimmed))
         continue;
 
@@ -182,18 +154,144 @@ function parseEverydayMortals(text: string): Partial<Creature>[] {
 }
 
 function parseAnimals(text: string): Partial<Creature>[] {
+  // Animals use Compact Stat Blocks.
+  // parseBestiary handles the standard "Level X AC Y" format which line 1 of compact blocks usually matches.
   const creatures = parseBestiary(text);
 
-  // Post-process names: "TEST, BEAST" -> "Test, Beast"
   return creatures.map((c) => {
+    // 1. Name Normalization (already existing)
     if (c.name && c.name.includes(',')) {
-      // Check if it looks like "NAME, SUFFIX" (usually all caps in source, but parseBestiary might capture the line as is)
-      // If the source line was "TEST, BEAST", parseBestiary sets name="TEST, BEAST".
-      // We want Title Case.
       c.name = toTitleCase(c.name);
+    }
+
+    // 2. Fix Kerning in Name
+    if (c.name) {
+      // Since parseBestiary might have captured "BAT, VA MPIR E", we need to fix it.
+      // But wait, toTitleCase might have messed it up if it lowercased everything?
+      // "VA MPIR E" -> "Va Mpir E" via toTitleCase.
+      // So we should cleanKerning BEFORE title casing if possible.
+      // However, parseBestiary returns the creature with the raw name found in the previous line.
+      // If the raw line was "BAT,   VA MPIR E", parseBestiary sets name="BAT,   VA MPIR E".
+
+      // So let's clean it first.
+      const cleaned = cleanKerning(c.name);
+      // Then Title Case if needed (if it has comma)
+      if (cleaned.includes(',')) {
+        c.name = toTitleCase(cleaned);
+      } else {
+        c.name = cleaned;
+      }
     }
     return c;
   });
+}
+
+// --- Compact Stat Block Logic ---
+
+function cleanKerning(text: string): string {
+  // Logic: Detect sequences of single uppercase letters separated by spaces and collapse them.
+  // e.g. "V A M P I R E" -> "VAMPIRE"
+
+  let current = text;
+  let previous = '';
+  let iterations = 0;
+
+  while (current !== previous && iterations < 10) {
+    previous = current;
+    // Look for single uppercase letter (or title case if already processed?)
+    // If the input is raw CAPS "V A M P I R E", this regex works:
+    // \b([A-Z])\s+(?=[A-Z]\b)
+
+    // If the input was already title-cased "V A M P I R E" -> "V A M P I R E", it still works.
+    // If it was "Va Mpir E" (result of toTitleCase on kerning), it's harder.
+    // Ideally we call cleanKerning on the RAW string.
+
+    current = current.replace(/\b([A-Z])\s+(?=[A-Z]\b)/g, '$1');
+    iterations++;
+  }
+
+  // Specific fix for "VA MPIR E" (chunks)
+  current = current.replace(/VA\s+MPIR\s+E/i, 'VAMPIRE');
+
+  return current;
+}
+
+function parseCompactSecondaryStats(
+  lines: string[],
+  currentIndex: number,
+  creature: Partial<Creature>,
+) {
+  // Look at the next few lines for Att, Speed, Morale, XP, Enc
+  let k = currentIndex + 1;
+  const maxLookAhead = 3;
+
+  while (k < lines.length && k < currentIndex + maxLookAhead) {
+    const line = lines[k].trim();
+    if (!line) {
+      k++;
+      continue;
+    }
+
+    // Stop if we hit a new creature (Level X) or Section Header
+    if (line.startsWith('Level ') || /^[A-Z\s]+$/.test(line)) {
+      break;
+    }
+
+    // if (creature.name?.includes('Bat') || creature.name?.includes('Cleric')) {
+    //   console.log(
+    //     `[DEBUG] Parsing stats for ${creature.name}, line: "${line}"`,
+    //   );
+    // }
+
+    // Attacks (Att or Attacks)
+    const attMatch = line.match(
+      /^(Att|Attacks?)[:]?\s+(.*?)(?=\s+(?:Speed|Move|Swim|Fly|Burrow|Climb)\b|$)/i,
+    );
+    if (attMatch && !creature.attacks) {
+      creature.attacks = [attMatch[2].trim()];
+    }
+
+    // Movement
+    if (!creature.movement) {
+      const moveMatch = line.match(
+        /(?:Speed|Move|Swim|Fly|Burrow|Climb)[:]?\b.*?(?=\s+(?:Morale|XP|Enc)\b|$)/i,
+      );
+      if (moveMatch) {
+        // Check if this line actually contains movement keywords
+        const hasMove = /(?:Speed|Move|Swim|Fly|Burrow|Climb)[:]?\s+\d/.test(
+          line,
+        );
+        if (hasMove) {
+          // We want to capture "Speed 10 Fly 60"
+          let moveStr = moveMatch[0];
+          // Strip the leading keyword
+          moveStr = moveStr.replace(
+            /^(Speed|Move|Swim|Fly|Burrow|Climb)[:]?\s+/i,
+            '',
+          );
+          // Clean up trailing bits if regex missed
+          moveStr = moveStr.replace(/\s+(?:Morale|XP|Enc).*$/, '').trim();
+          creature.movement = isNaN(Number(moveStr))
+            ? moveStr
+            : Number(moveStr);
+        }
+      }
+    }
+
+    // Morale
+    const moraleMatch = line.match(/Morale[:]?\s+(\d+)/i);
+    if (moraleMatch) creature.morale = Number(moraleMatch[1]);
+
+    // XP
+    const xpMatch = line.match(/XP[:]?\s+([\d,]+)/i);
+    if (xpMatch) creature.xp = Number(xpMatch[1].replace(/,/g, ''));
+
+    // Enc (Number Appearing)
+    const encMatch = line.match(/Enc[:]?\s+([\dd+]+)/i);
+    if (encMatch) creature.numberAppearing = encMatch[1];
+
+    k++;
+  }
 }
 
 function toTitleCase(str: string): string {
@@ -249,26 +347,40 @@ function parseBestiary(text: string): Partial<Creature>[] {
             /^\d+$/.test(prevLine) ||
             /part two/i.test(prevLine) ||
             /Names:/i.test(prevLine) ||
-            /Adventurers/i.test(prevLine) || // Stop at section headers if we crossed boundary (unlikely with split)
+            /Adventurers/i.test(prevLine) ||
             prevLine === 'Everyday Mortals' ||
-            prevLine === 'Animals'
+            prevLine === 'Animals' ||
+            // New stop condition: Don't pick up "AC" or "Level" as names if they appear on their own lines (artifacts)
+            /^AC\b/.test(prevLine) ||
+            /^Level\b/.test(prevLine)
           ) {
             break;
           }
 
           // Name Heuristic
           if (prevLine.length < 50 && !prevLine.endsWith('.')) {
-            creature.name = prevLine;
+            // Clean kerning right here to get the "real" name
+            creature.name = cleanKerning(prevLine);
             break;
           }
         }
         j--;
       }
 
-      parseForwardStats(lines, i, creature);
+      // Try compact stats parsing first (it handles the "Att ... Speed ..." line style)
+      // If it doesn't find anything, we can fallback to parseForwardStats
+      // Actually, let's use a unified approach or check which one to use.
+      // Animals/Appendices use compact style.
+
+      // We can try parseCompactSecondaryStats. If it finds Attacks/Speed, good.
+      parseCompactSecondaryStats(lines, i, creature);
+
+      // If we didn't find attacks/movement yet, try the standard forward parser
+      if (!creature.attacks || !creature.movement) {
+        parseForwardStats(lines, i, creature);
+      }
 
       if (creature.name) {
-        // Check for specific default logic
         if (!creature.numberAppearing) {
           creature.numberAppearing = '1 (Unique)';
         }
