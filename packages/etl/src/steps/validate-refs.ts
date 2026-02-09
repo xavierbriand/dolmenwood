@@ -104,6 +104,39 @@ export async function validateReferences(): Promise<void> {
       chalk.green(`\n✅ All encounter references resolve to valid creatures!`),
     );
   }
+
+  // 4. Reverse Check: Creatures not used in encounters
+  const normalizedRefs = new Set<string>();
+  encounterReferences.forEach((ref) => normalizedRefs.add(normalizeName(ref)));
+
+  const unused: string[] = [];
+  if (Array.isArray(creaturesData)) {
+    creaturesData.forEach((c) => {
+      if (!normalizedRefs.has(normalizeName(c.name))) {
+        unused.push(c.name);
+      }
+    });
+  }
+
+  if (unused.length > 0) {
+    console.log(
+      chalk.blue(`\nℹ️  Found ${unused.length} unreferenced creatures:`),
+    );
+    unused.sort().forEach((name) => {
+      console.log(chalk.blue(`   - ${name}`));
+    });
+    console.log(
+      chalk.gray(
+        `\nThese creatures exist in the bestiary but are not currently used in any encounter table.`,
+      ),
+    );
+  } else {
+    console.log(
+      chalk.green(
+        `\n✅ All bestiary creatures are used in at least one encounter!`,
+      ),
+    );
+  }
 }
 
 /**
