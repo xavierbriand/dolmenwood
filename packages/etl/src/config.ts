@@ -20,6 +20,8 @@ export const PATHS = {
   RAW_TEXT: path.join(TMP_DIR, 'dmb-raw.txt'),
   NORMALIZED_TEXT: path.join(TMP_DIR, 'dmb-normalized.md'),
   CREATURE_PAGES: path.join(TMP_DIR, 'creatures-pages.json'),
+  TOC_JSON: path.join(TMP_DIR, 'toc.json'),
+  INTERMEDIATE_JSON: path.join(TMP_DIR, 'creatures.json'),
 
   // Target Asset File
   CREATURES_YAML: path.join(ASSETS_DIR, 'creatures.yaml'),

@@ -53,7 +53,7 @@ program
     try {
       console.log('Step 2: Transforming...');
       const text = await fs.readFile(PATHS.RAW_TEXT, 'utf-8');
-      const { normalizedText, pages } = normalizeText(text);
+      const { normalizedText, pages, toc } = normalizeText(text);
 
       await fs.writeFile(PATHS.NORMALIZED_TEXT, normalizedText, 'utf-8');
       await fs.writeFile(
@@ -61,8 +61,10 @@ program
         JSON.stringify(pages, null, 2),
         'utf-8',
       );
+      await fs.writeFile(PATHS.TOC_JSON, JSON.stringify(toc, null, 2), 'utf-8');
       console.log(`Saved normalized text to: ${PATHS.NORMALIZED_TEXT}`);
-      console.log(`Saved creature pages to to: ${PATHS.CREATURE_PAGES}`);
+      console.log(`Saved creature pages to: ${PATHS.CREATURE_PAGES}`);
+      console.log(`Saved parsed TOC to: ${PATHS.TOC_JSON}`);
     } catch (error) {
       console.error('Transformation failed:', error);
       process.exit(1);
@@ -110,23 +112,28 @@ program
 
       // 2. Transform
       console.log('Step 2: Transforming...');
-      const { blocks: creatures, normalizedText } = parseCreatures(text);
+      const { normalizedText, pages, toc } = normalizeText(text);
 
       await fs.writeFile(PATHS.NORMALIZED_TEXT, normalizedText, 'utf-8');
       await fs.writeFile(
-        PATHS.INTERMEDIATE_JSON,
-        JSON.stringify(creatures, null, 2),
+        PATHS.CREATURE_PAGES,
+        JSON.stringify(pages, null, 2),
         'utf-8',
       );
+      await fs.writeFile(PATHS.TOC_JSON, JSON.stringify(toc, null, 2), 'utf-8');
+      console.log(`Saved parsed TOC to: ${PATHS.TOC_JSON}`);
+
+      // Placeholder for parsed creatures
+      await fs.writeFile(PATHS.INTERMEDIATE_JSON, '[]', 'utf-8');
 
       // 3. Load
-      console.log('Step 3: Loading...');
-      await loadCreatures();
+      // console.log('Step 3: Loading...');
+      // await loadCreatures();
 
       // 4. Verify
-      await validateReferences();
+      // await validateReferences();
 
-      console.log('\n🎉 Pipeline Complete!');
+      console.log('\n🎉 Pipeline Complete (Partial)!');
     } catch (error) {
       console.error('\n❌ Pipeline Failed:', error);
       process.exit(1);

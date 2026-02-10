@@ -20,6 +20,69 @@ export class Chunker {
   };
 
   /**
+   * Extract the Table of Contents section
+   */
+  public extractTOC(fullText: string): string {
+    const startMatch = fullText.match(Chunker.PATTERNS.TOC_START);
+    const endMatch = fullText.match(Chunker.PATTERNS.PART_ONE_START);
+
+    if (!startMatch) return '';
+
+    const startIndex = startMatch.index! + startMatch[0].length;
+    const endIndex = endMatch ? endMatch.index! : fullText.length;
+
+    return fullText.slice(startIndex, endIndex).trim();
+  }
+
+  /**
+   * Parse the Bestiary list from the TOC text.
+   * Looks for the "Bestiary" section (starts with page number)
+   * and extracts items (Name Page) until the next section (starts with page number).
+   */
+  public parseBestiaryList(
+    tocText: string,
+  ): Array<{ name: string; page: number }> {
+    const lines = tocText
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0);
+    const creatures: Array<{ name: string; page: number }> = [];
+    let insideBestiary = false;
+
+    // Pattern for section header: "11 Bestiary" (Number then Text)
+    const bestiaryHeaderPattern = /^\d+\s+Bestiary/i;
+    // Pattern for next section: Starts with number (e.g. "102 Appendices")
+    const nextSectionPattern = /^\d+\s+/;
+    // Pattern for entry: "Name 12" (Text then Number)
+    const entryPattern = /^(.*?)\s+(\d+)$/;
+
+    for (const line of lines) {
+      if (!insideBestiary) {
+        if (bestiaryHeaderPattern.test(line)) {
+          insideBestiary = true;
+        }
+        continue;
+      }
+
+      // If we are inside Bestiary and hit a line starting with a number, it's the next section
+      if (nextSectionPattern.test(line)) {
+        break;
+      }
+
+      // Parse entry
+      const match = line.match(entryPattern);
+      if (match) {
+        creatures.push({
+          name: match[1].trim(),
+          page: parseInt(match[2], 10),
+        });
+      }
+    }
+
+    return creatures;
+  }
+
+  /**
    * Slice the document into major sections
    */
   public extractBestiarySection(fullText: string): string {

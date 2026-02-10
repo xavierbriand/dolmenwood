@@ -58,6 +58,58 @@ Page 3 content
     });
   });
 
+  describe('TOC Parsing', () => {
+    const mockTOC = `
+Table of Contents
+4 Monsters of DolMenwooD
+Denizens of the Deep, Dank Woods 6
+Monster Statistics 8
+11 Bestiary
+Creature One 12
+Creature Two 13
+102 appenDices
+Adventurers 104
+    `;
+
+    const fullDocMock = `
+${mockTOC}
+Part One
+Monsters of
+`;
+
+    it('should extract TOC section', () => {
+      const toc = chunker.extractTOC(fullDocMock);
+      expect(toc).toContain('11 Bestiary');
+      expect(toc).toContain('Creature One 12');
+      expect(toc).not.toContain('Part One');
+    });
+
+    it('should parse Bestiary list correctly', () => {
+      const toc = chunker.extractTOC(fullDocMock);
+      const creatures = chunker.parseBestiaryList(toc);
+
+      expect(creatures.length).toBe(2);
+      expect(creatures[0]).toEqual({ name: 'Creature One', page: 12 });
+      expect(creatures[1]).toEqual({ name: 'Creature Two', page: 13 });
+    });
+
+    it('should stop parsing at next section', () => {
+      const toc = `
+11 Bestiary
+Creature A 10
+Creature B 20
+102 Appendices
+Creature C 30
+`;
+      const creatures = chunker.parseBestiaryList(toc);
+      expect(creatures).toHaveLength(2);
+      expect(creatures.map((c) => c.name)).toEqual([
+        'Creature A',
+        'Creature B',
+      ]);
+    });
+  });
+
   describe('filterValidPages', () => {
     it('should keep pages starting with a number and newline', () => {
       const pages = ['12\nCreature Name...', '105\nAnother Creature...'];
