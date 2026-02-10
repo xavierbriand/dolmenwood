@@ -150,7 +150,7 @@ function normalizeName(name: string): string {
  * Recursive function to find 'result' fields in the encounters object.
  * This is a heuristic approach since the encounters YAML structure might vary.
  */
-function extractCreatureReferences(obj: any, refs: Set<string>) {
+function extractCreatureReferences(obj: unknown, refs: Set<string>) {
   if (!obj || typeof obj !== 'object') return;
 
   if (Array.isArray(obj)) {
@@ -158,18 +158,21 @@ function extractCreatureReferences(obj: any, refs: Set<string>) {
     return;
   }
 
+  // Cast to Record to access properties safely
+  const record = obj as Record<string, unknown>;
+
   // Check if this object looks like an encounter entry
-  if ('ref' in obj && typeof obj.ref === 'string') {
+  if ('ref' in record && typeof record.ref === 'string') {
     // Basic filter to avoid non-creature results like "Roll on subtable" or empty strings
-    const res = obj.ref.trim();
+    const res = record.ref.trim();
     if (res && !res.startsWith('Roll on') && !res.startsWith('See')) {
       refs.add(res);
     }
   }
 
   // Recurse into all values
-  for (const key of Object.keys(obj)) {
-    extractCreatureReferences(obj[key], refs);
+  for (const key of Object.keys(record)) {
+    extractCreatureReferences(record[key], refs);
   }
 }
 
