@@ -2,9 +2,9 @@ import { Command } from 'commander';
 import fs from 'node:fs/promises';
 import { PATHS } from './config.js';
 import { extractText } from './steps/extract.js';
-import { normalizeText } from './steps/transform.js';
 import { loadCreatures } from './steps/load.js';
 import { validateReferences } from './steps/validate-refs.js';
+import { normalizeText } from './steps/transform.js';
 
 const program = new Command();
 
@@ -52,13 +52,17 @@ program
   .action(async () => {
     try {
       console.log('Step 2: Transforming...');
-      const rawText = await fs.readFile(PATHS.RAW_TEXT, 'utf-8');
-      const normalizedText = normalizeText(rawText);
-      console.log(`Saved normalized text to: ${PATHS.NORMALIZED_TEXT}`);
+      const text = await fs.readFile(PATHS.RAW_TEXT, 'utf-8');
+      const { normalizedText, pages } = normalizeText(text);
 
       await fs.writeFile(PATHS.NORMALIZED_TEXT, normalizedText, 'utf-8');
-      console.info('--- implementation not finished ---')
-      process.exit(1);      
+      await fs.writeFile(
+        PATHS.CREATURE_PAGES,
+        JSON.stringify(pages, null, 2),
+        'utf-8',
+      );
+      console.log(`Saved normalized text to: ${PATHS.NORMALIZED_TEXT}`);
+      console.log(`Saved creature pages to to: ${PATHS.CREATURE_PAGES}`);
     } catch (error) {
       console.error('Transformation failed:', error);
       process.exit(1);

@@ -19,10 +19,11 @@ export const PATHS = {
   // Intermediate Files
   RAW_TEXT: path.join(TMP_DIR, 'dmb-raw.txt'),
   NORMALIZED_TEXT: path.join(TMP_DIR, 'dmb-normalized.md'),
-  
+  CREATURE_PAGES: path.join(TMP_DIR, 'creatures-pages.json'),
+
   // Target Asset File
   CREATURES_YAML: path.join(ASSETS_DIR, 'creatures.yaml'),
 
   // Encounter Tables
-  ENCOUNTERS_DIR: ASSETS_DIR
+  ENCOUNTERS_DIR: ASSETS_DIR,
 };
