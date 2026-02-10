@@ -108,6 +108,39 @@ Creature C 30
         'Creature B',
       ]);
     });
+
+    it('should parse Appendices subsections', () => {
+      const toc = `
+102 appenDices
+Adventurers 104
+Bard 104
+Cleric 104
+Adventuring Parties 108
+Everyday Mortals 110
+Mortal A 110
+Mortal B 111
+Animals 112
+Animal A 112
+Bear 112
+Monster Rumours 120
+      `;
+
+      const result = chunker.parseAppendicesList(toc);
+
+      // Adventurers
+      expect(result.adventurers).toHaveLength(2);
+      expect(result.adventurers[0].name).toBe('Bard');
+
+      // Everyday Mortals
+      expect(result.everydayMortals).toHaveLength(2);
+      expect(result.everydayMortals[0].name).toBe('Mortal A');
+      expect(result.everydayMortals[1].name).toBe('Mortal B');
+
+      // Animals
+      expect(result.animals).toHaveLength(2);
+      expect(result.animals[0].name).toBe('Animal A');
+      expect(result.animals[1].name).toBe('Bear');
+    });
   });
 
   describe('filterValidPages', () => {

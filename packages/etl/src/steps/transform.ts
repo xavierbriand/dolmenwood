@@ -4,7 +4,14 @@ import { Chunker } from '../processors/Chunker.js';
 export function normalizeText(rawText: string): {
   normalizedText: string;
   pages: string[];
-  toc: Array<{ name: string; page: number }>;
+  toc: {
+    bestiary: Array<{ name: string; page: number }>;
+    appendices: {
+      adventurers: Array<{ name: string; page: number }>;
+      everydayMortals: Array<{ name: string; page: number }>;
+      animals: Array<{ name: string; page: number }>;
+    };
+  };
 } {
   console.log('  - Running Stage 1: Normalization...');
   const normalizer = new Normalizer();
@@ -16,8 +23,21 @@ export function normalizeText(rawText: string): {
   // 1. Extract TOC
   console.log('    - Extracting Table of Contents...');
   const tocText = chunker.extractTOC(normalizedText);
-  const toc = chunker.parseBestiaryList(tocText);
-  console.log(`    - Found ${toc.length} creatures in TOC.`);
+
+  // 1a. Parse Bestiary
+  const bestiaryList = chunker.parseBestiaryList(tocText);
+  console.log(`    - Found ${bestiaryList.length} creatures in Bestiary.`);
+
+  // 1b. Parse Appendices
+  const appendicesLists = chunker.parseAppendicesList(tocText);
+  console.log(
+    `    - Found ${appendicesLists.adventurers.length} adventurers, ${appendicesLists.everydayMortals.length} everyday mortals, ${appendicesLists.animals.length} animals.`,
+  );
+
+  const toc = {
+    bestiary: bestiaryList,
+    appendices: appendicesLists,
+  };
 
   // 2. Extract Bestiary Section
   console.log('    - Extracting Bestiary section...');

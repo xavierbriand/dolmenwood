@@ -83,6 +83,76 @@ export class Chunker {
   }
 
   /**
+   * Parse Appendices subsections: Adventurers, Everyday Mortals, Animals.
+   */
+  public parseAppendicesList(tocText: string): {
+    adventurers: Array<{ name: string; page: number }>;
+    everydayMortals: Array<{ name: string; page: number }>;
+    animals: Array<{ name: string; page: number }>;
+  } {
+    const lines = tocText
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0);
+
+    const result = {
+      adventurers: [] as Array<{ name: string; page: number }>,
+      everydayMortals: [] as Array<{ name: string; page: number }>,
+      animals: [] as Array<{ name: string; page: number }>,
+    };
+
+    let currentSection: 'adventurers' | 'everydayMortals' | 'animals' | null =
+      null;
+
+    // Entry Pattern: "Name 123"
+    const entryPattern = /^(.*?)\s+(\d+)$/;
+
+    for (const line of lines) {
+      // 1. Detect Subsection Start
+      if (/^Adventurers\s+\d+/i.test(line)) {
+        currentSection = 'adventurers';
+        continue;
+      }
+      if (/^Everyday Mortals\s+\d+/i.test(line)) {
+        currentSection = 'everydayMortals';
+        continue;
+      }
+      if (/^Animals\s+\d+/i.test(line)) {
+        currentSection = 'animals';
+        continue;
+      }
+
+      // 2. Detect Subsection End (Start of next section)
+      if (/^Adventuring Parties\s+\d+/i.test(line)) {
+        currentSection = null; // End of Adventurers
+        continue;
+      }
+      if (/^Monster Rumours\s+\d+/i.test(line)) {
+        currentSection = null; // End of Animals
+        continue;
+      }
+      // Note: Everyday Mortals ends when Animals starts, handled by "Detect Subsection Start" check above?
+      // Actually, Animals follows Everyday Mortals immediately in my observed TOC?
+      // Let's re-check the normalized file:
+      // "Everyday Mortals 110" ... entries ... "Animals 112"
+      // So detecting "Animals" will switch the mode correctly.
+
+      // 3. Parse Items if in a section
+      if (currentSection) {
+        const match = line.match(entryPattern);
+        if (match) {
+          result[currentSection].push({
+            name: match[1].trim(),
+            page: parseInt(match[2], 10),
+          });
+        }
+      }
+    }
+
+    return result;
+  }
+
+  /**
    * Slice the document into major sections
    */
   public extractBestiarySection(fullText: string): string {
