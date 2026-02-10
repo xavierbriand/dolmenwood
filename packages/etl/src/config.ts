@@ -22,6 +22,7 @@ export const PATHS = {
   CREATURE_PAGES: path.join(TMP_DIR, 'creatures-pages.json'),
   TOC_JSON: path.join(TMP_DIR, 'toc.json'),
   INTERMEDIATE_JSON: path.join(TMP_DIR, 'creatures.json'),
+  BESTIARY_MERGED: path.join(TMP_DIR, 'bestiary-merged.json'),
 
   // Target Asset File
   CREATURES_YAML: path.join(ASSETS_DIR, 'creatures.yaml'),

@@ -1,5 +1,6 @@
 import { Normalizer } from '../processors/Normalizer.js';
 import { Chunker } from '../processors/Chunker.js';
+import { PageMerger } from '../processors/PageMerger.js';
 
 export function normalizeText(rawText: string): {
   normalizedText: string;
@@ -55,4 +56,18 @@ export function normalizeText(rawText: string): {
   );
 
   return { normalizedText, pages, toc };
+}
+
+export function mergeBestiaryPages(
+  pages: string[],
+  toc: { bestiary: Array<{ name: string; page: number }> },
+): string[] {
+  console.log('  - Running Stage 3: Merging Bestiary Pages...');
+  const merger = new PageMerger();
+  const startPages = new Set(toc.bestiary.map((entry) => entry.page));
+
+  const merged = merger.merge(pages, startPages);
+  console.log(`    - Merged into ${merged.length} creature entries.`);
+
+  return merged;
 }

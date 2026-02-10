@@ -4,7 +4,7 @@ import { PATHS } from './config.js';
 import { extractText } from './steps/extract.js';
 import { loadCreatures } from './steps/load.js';
 import { validateReferences } from './steps/validate-refs.js';
-import { normalizeText } from './steps/transform.js';
+import { normalizeText, mergeBestiaryPages } from './steps/transform.js';
 
 const program = new Command();
 
@@ -62,8 +62,19 @@ program
         'utf-8',
       );
       await fs.writeFile(PATHS.TOC_JSON, JSON.stringify(toc, null, 2), 'utf-8');
+
+      // BRANCH: Bestiary
+      console.log('Step 2a: Processing Bestiary Branch...');
+      const bestiaryMerged = mergeBestiaryPages(pages, toc);
+      await fs.writeFile(
+        PATHS.BESTIARY_MERGED,
+        JSON.stringify(bestiaryMerged, null, 2),
+        'utf-8',
+      );
+
       console.log(`Saved normalized text to: ${PATHS.NORMALIZED_TEXT}`);
       console.log(`Saved creature pages to: ${PATHS.CREATURE_PAGES}`);
+      console.log(`Saved bestiary merged to: ${PATHS.BESTIARY_MERGED}`);
       console.log(`Saved parsed TOC to: ${PATHS.TOC_JSON}`);
     } catch (error) {
       console.error('Transformation failed:', error);
@@ -121,6 +132,16 @@ program
         'utf-8',
       );
       await fs.writeFile(PATHS.TOC_JSON, JSON.stringify(toc, null, 2), 'utf-8');
+
+      // BRANCH: Bestiary
+      console.log('Step 2a: Processing Bestiary Branch...');
+      const bestiaryMerged = mergeBestiaryPages(pages, toc);
+      await fs.writeFile(
+        PATHS.BESTIARY_MERGED,
+        JSON.stringify(bestiaryMerged, null, 2),
+        'utf-8',
+      );
+
       console.log(`Saved parsed TOC to: ${PATHS.TOC_JSON}`);
 
       // Placeholder for parsed creatures
