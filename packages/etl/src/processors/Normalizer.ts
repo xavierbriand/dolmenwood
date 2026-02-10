@@ -1,15 +1,16 @@
 export class Normalizer {
   private kerningDictionary: Record<string, string> = {
-    "For t u ne -Te l le r": "Fortune-Teller",
-    "Yeg r i l": "Yegril",
-    "BAT, GI A N T": "BAT, GIANT",
-    "BAT, VA MPIR E": "BAT, VAMPIRE",
-    "R AT, GI A N T": "RAT, GIANT",
-    "F LY, G I A N T": "FLY, GIANT",
-    "Fl ig ht y, g reedy, merc u r ia l": "Flighty, greedy, mercurial",
-    "C R E AT I O N": "CREATION",
-    "H AT  T Y P E": "HAT  TYPE",
-    "Fair y Horse": "Fairy Horse",  
+    'For t u ne -Te l le r': 'Fortune-Teller',
+    'Yeg r i l': 'Yegril',
+    'BAT, GI A N T': 'BAT, GIANT',
+    'BAT, VA MPIR E': 'BAT, VAMPIRE',
+    'Bat, Va Mpir E': 'Bat, Vampire',
+    'R AT, GI A N T': 'RAT, GIANT',
+    'F LY, G I A N T': 'FLY, GIANT',
+    'Fl ig ht y, g reedy, merc u r ia l': 'Flighty, greedy, mercurial',
+    'C R E AT I O N': 'CREATION',
+    'H AT  T Y P E': 'HAT  TYPE',
+    'Fair y Horse': 'Fairy Horse',
   };
 
   /**
@@ -19,8 +20,19 @@ export class Normalizer {
     let current = text;
     current = this.normalizeSymbols(current);
     current = this.fixLineBreaks(current);
+    current = this.fixDropCaps(current);
     current = this.fixKerning(current);
     return current;
+  }
+
+  /**
+   * Fix "Lettrine" or "Drop Cap" artifacts where the first letter is on its own line
+   * Example: "M\nonster" -> "Monster"
+   */
+  public fixDropCaps(text: string): string {
+    // Matches: start of string or newline + single letter + newline + word char
+    // $1 = previous newline/start, $2 = the letter, $3 = next char
+    return text.replace(/(^|\n)([A-Za-z])\r?\n([A-Za-z])/g, '$1$2$3');
   }
 
   /**
