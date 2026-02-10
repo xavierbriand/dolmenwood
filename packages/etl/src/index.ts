@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import fs from 'node:fs/promises';
 import { PATHS } from './config.js';
 import { extractText } from './steps/extract.js';
-import { parseCreatures } from './steps/transform.js';
+import { normalizeText } from './steps/transform.js';
 import { loadCreatures } from './steps/load.js';
 import { validateReferences } from './steps/validate-refs.js';
 
@@ -52,17 +52,13 @@ program
   .action(async () => {
     try {
       console.log('Step 2: Transforming...');
-      const text = await fs.readFile(PATHS.RAW_TEXT, 'utf-8');
-      const creatures = parseCreatures(text);
-      await fs.writeFile(
-        PATHS.INTERMEDIATE_JSON,
-        JSON.stringify(creatures, null, 2),
-        'utf-8',
-      );
-      console.log(
-        `Transformation complete. Extracted ${creatures.length} creatures.`,
-      );
-      console.log(`Saved to: ${PATHS.INTERMEDIATE_JSON}`);
+      const rawText = await fs.readFile(PATHS.RAW_TEXT, 'utf-8');
+      const normalizedText = normalizeText(rawText);
+      console.log(`Saved normalized text to: ${PATHS.NORMALIZED_TEXT}`);
+
+      await fs.writeFile(PATHS.NORMALIZED_TEXT, normalizedText, 'utf-8');
+      console.info('--- implementation not finished ---')
+      process.exit(1);      
     } catch (error) {
       console.error('Transformation failed:', error);
       process.exit(1);
@@ -110,7 +106,9 @@ program
 
       // 2. Transform
       console.log('Step 2: Transforming...');
-      const creatures = parseCreatures(text);
+      const { blocks: creatures, normalizedText } = parseCreatures(text);
+
+      await fs.writeFile(PATHS.NORMALIZED_TEXT, normalizedText, 'utf-8');
       await fs.writeFile(
         PATHS.INTERMEDIATE_JSON,
         JSON.stringify(creatures, null, 2),

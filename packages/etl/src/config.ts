@@ -7,21 +7,22 @@ const __dirname = path.dirname(__filename);
 // Root of the monorepo (packages/etl/src -> packages/etl -> packages -> root)
 export const PROJECT_ROOT = path.resolve(__dirname, '../../../');
 
+const TMP_DIR = path.join(PROJECT_ROOT, 'tmp/etl');
+const ASSETS_DIR = path.join(PROJECT_ROOT, 'assets');
+
 export const PATHS = {
+  TMP_DIR: TMP_DIR,
+
   // Source PDF (User provided)
-  PDF_SOURCE: path.join(PROJECT_ROOT, 'tmp/etl/DMB.pdf'),
+  PDF_SOURCE: path.join(TMP_DIR, 'DMB.pdf'),
 
-  // Intermediate Files (Git ignored)
-  TMP_DIR: path.join(PROJECT_ROOT, 'tmp/etl'),
-  RAW_TEXT: path.join(PROJECT_ROOT, 'tmp/etl/dmb-raw.txt'),
-  INTERMEDIATE_JSON: path.join(
-    PROJECT_ROOT,
-    'tmp/etl/creatures-intermediate.json',
-  ),
-
+  // Intermediate Files
+  RAW_TEXT: path.join(TMP_DIR, 'dmb-raw.txt'),
+  NORMALIZED_TEXT: path.join(TMP_DIR, 'dmb-normalized.md'),
+  
   // Target Asset File
-  CREATURES_YAML: path.join(PROJECT_ROOT, 'assets/creatures.yaml'),
+  CREATURES_YAML: path.join(ASSETS_DIR, 'creatures.yaml'),
 
-  // Encounter Tables (for consistency check)
-  ENCOUNTERS_DIR: path.join(PROJECT_ROOT, 'assets'),
+  // Encounter Tables
+  ENCOUNTERS_DIR: ASSETS_DIR
 };
