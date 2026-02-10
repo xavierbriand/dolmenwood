@@ -1,11 +1,15 @@
 export class Normalizer {
   private kerningDictionary: Record<string, string> = {
-    // Note: Keys must use single spaces as normalizeSymbols runs first
-    'Bat, Va Mpir E': 'Bat, Vampire',
-    'Rat, Gi An T': 'Rat, Giant',
-    'Fly, Giant': 'Fly, Giant', // already correct but included for safety
-    'Dr Ag On': 'Dragon',
-    'Go Bli N': 'Goblin',
+    "For t u ne -Te l le r": "Fortune-Teller",
+    "Yeg r i l": "Yegril",
+    "BAT, GI A N T": "BAT, GIANT",
+    "BAT, VA MPIR E": "BAT, VAMPIRE",
+    "R AT, GI A N T": "RAT, GIANT",
+    "F LY, G I A N T": "FLY, GIANT",
+    "Fl ig ht y, g reedy, merc u r ia l": "Flighty, greedy, mercurial",
+    "C R E AT I O N": "CREATION",
+    "H AT  T Y P E": "HAT  TYPE",
+    "Fair y Horse": "Fairy Horse",  
   };
 
   /**
