@@ -57,4 +57,29 @@ Page 3 content
       expect(pages[2]).toContain('Page 3 content');
     });
   });
+
+  describe('filterValidPages', () => {
+    it('should keep pages starting with a number and newline', () => {
+      const pages = ['12\nCreature Name...', '105\nAnother Creature...'];
+      const filtered = chunker.filterValidPages(pages);
+      expect(filtered).toHaveLength(2);
+    });
+
+    it('should remove pages starting with text', () => {
+      const pages = ['Intro text here...', '12\nValid Page'];
+      const filtered = chunker.filterValidPages(pages);
+      expect(filtered).toHaveLength(1);
+      expect(filtered[0]).toContain('Valid Page');
+    });
+
+    it('should remove pages starting with number but no newline immediately', () => {
+      const pages = [
+        '12.5 Section Header', // Text on same line
+        '12\nValid Page',
+      ];
+      const filtered = chunker.filterValidPages(pages);
+      expect(filtered).toHaveLength(1);
+      expect(filtered[0]).toContain('Valid Page');
+    });
+  });
 });

@@ -53,4 +53,15 @@ export class Chunker {
       .map((p) => p.trim())
       .filter((p) => p.length > 0);
   }
+
+  /**
+   * Filter out pages that don't start with a page number followed by a newline.
+   * This removes introductory text or malformed pages.
+   */
+  public filterValidPages(pages: string[]): string[] {
+    // Pattern: Start of string -> One or more digits -> Newline
+    const validPagePattern = /^\d+(\r?\n|$)/;
+
+    return pages.filter((page) => validPagePattern.test(page));
+  }
 }

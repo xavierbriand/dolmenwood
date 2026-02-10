@@ -18,8 +18,14 @@ export function normalizeText(rawText: string): {
 
   // 2. Split by Page
   console.log('    - Splitting pages...');
-  const pages = chunker.splitBestiaryPages(bestiaryText);
-  console.log(`    - Found ${pages.length} pages.`);
+  const rawPages = chunker.splitBestiaryPages(bestiaryText);
+  console.log(`    - Found ${rawPages.length} raw chunks.`);
+
+  // 3. Filter Valid Pages
+  const pages = chunker.filterValidPages(rawPages);
+  console.log(
+    `    - Retained ${pages.length} valid pages (filtered intro/noise).`,
+  );
 
   return { normalizedText, pages };
 }
