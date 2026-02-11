@@ -8,7 +8,6 @@ import {
 } from '@dolmenwood/core';
 import fs from 'fs/promises';
 import path from 'path';
-import { z } from 'zod';
 
 export class JsonSessionRepository implements SessionRepository {
   constructor(private storageDir: string) {}

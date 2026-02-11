@@ -7,18 +7,29 @@ const __dirname = path.dirname(__filename);
 // Root of the monorepo (packages/etl/src -> packages/etl -> packages -> root)
 export const PROJECT_ROOT = path.resolve(__dirname, '../../../');
 
-export const PATHS = {
-  // Source PDF (User provided)
-  PDF_SOURCE: path.join(PROJECT_ROOT, 'tmp/etl/DMB.pdf'),
+const TMP_DIR = path.join(PROJECT_ROOT, 'tmp/etl');
+const ASSETS_DIR = path.join(PROJECT_ROOT, 'assets');
 
-  // Intermediate Files (Git ignored)
-  TMP_DIR: path.join(PROJECT_ROOT, 'tmp/etl'),
-  RAW_TEXT: path.join(PROJECT_ROOT, 'tmp/etl/dmb-raw.txt'),
-  INTERMEDIATE_JSON: path.join(
-    PROJECT_ROOT,
-    'tmp/etl/creatures-intermediate.json',
-  ),
+export const PATHS = {
+  TMP_DIR: TMP_DIR,
+
+  // Source PDF (User provided)
+  PDF_SOURCE: path.join(TMP_DIR, 'DMB.pdf'),
+
+  // Intermediate Files
+  RAW_TEXT: path.join(TMP_DIR, 'dmb-raw.txt'),
+  NORMALIZED_TEXT: path.join(TMP_DIR, 'dmb-normalized.md'),
+  CREATURE_PAGES: path.join(TMP_DIR, 'creatures-pages.json'),
+  TOC_JSON: path.join(TMP_DIR, 'toc.json'),
+  INTERMEDIATE_JSON: path.join(TMP_DIR, 'creatures.json'),
+  BESTIARY_MERGED: path.join(TMP_DIR, 'bestiary-merged.json'),
+  ANIMALS_JSON: path.join(TMP_DIR, 'animals.json'),
+  MORTALS_JSON: path.join(TMP_DIR, 'mortals.json'),
+  ADVENTURERS_JSON: path.join(TMP_DIR, 'adventurers.json'),
 
   // Target Asset File
-  CREATURES_YAML: path.join(PROJECT_ROOT, 'assets/creatures.yaml'),
+  CREATURES_YAML: path.join(ASSETS_DIR, 'creatures.yaml'),
+
+  // Encounter Tables
+  ENCOUNTERS_DIR: ASSETS_DIR,
 };

@@ -1,7 +1,7 @@
 import { SessionRepository } from '../ports/SessionRepository.js';
 import { SessionState, SessionContext } from '../schemas/session.js';
 import { Encounter } from '../schemas/encounter.js';
-import { Result, success, failure } from '../utils/Result.js';
+import { Result, success } from '../utils/Result.js';
 
 export class SessionService {
   constructor(private repo: SessionRepository) {}
