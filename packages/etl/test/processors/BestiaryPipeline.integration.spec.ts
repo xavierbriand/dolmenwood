@@ -15,9 +15,9 @@ const BESTIARY_MERGED_PATH = path.resolve(
 const hasSourceData = fs.existsSync(BESTIARY_MERGED_PATH);
 
 describe.skipIf(!hasSourceData)('Bestiary Pipeline Integration', () => {
-  const mergedBlocks: string[] = JSON.parse(
-    fs.readFileSync(BESTIARY_MERGED_PATH, 'utf-8'),
-  );
+  const mergedBlocks: string[] = hasSourceData
+    ? JSON.parse(fs.readFileSync(BESTIARY_MERGED_PATH, 'utf-8'))
+    : [];
   const parser = new BestiaryStatParser();
 
   it('should have 88 merged blocks total', () => {

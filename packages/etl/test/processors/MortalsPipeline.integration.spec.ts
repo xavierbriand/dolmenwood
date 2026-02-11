@@ -20,7 +20,9 @@ const hasSourceData = fs.existsSync(NORMALIZED_TEXT_PATH);
 
 describe.skipIf(!hasSourceData)('Everyday Mortals Pipeline Integration', () => {
   // Re-normalize to ensure kerning fixes are applied
-  const rawNormalized = fs.readFileSync(NORMALIZED_TEXT_PATH, 'utf-8');
+  const rawNormalized = hasSourceData
+    ? fs.readFileSync(NORMALIZED_TEXT_PATH, 'utf-8')
+    : '';
   const normalizer = new Normalizer();
   const normalizedText = normalizer.process(rawNormalized);
 
