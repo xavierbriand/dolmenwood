@@ -599,4 +599,36 @@ describe('BestiaryStatParser', () => {
       expect(result.description).toContain('Spell casting: Can cast 3 spells');
     });
   });
+
+  describe('isStatBlock', () => {
+    it('should return true for a block with a Level line', () => {
+      const block = [
+        '42',
+        'Shadow Hound',
+        'Dark canine spirits.',
+        'MeDiuM unDeaD-seMi-intelligent-chaotic',
+        'Level 4 AC 14 HP 4d8 (18) Saves D10 R11 H12 B13 S14',
+        'Attacks Bite (+3, 1d10)',
+        'Speed 40 Morale 9 XP 180',
+      ].join('\n');
+
+      expect(BestiaryStatParser.isStatBlock(block)).toBe(true);
+    });
+
+    it('should return false for a descriptive overview with no Level line', () => {
+      const block = [
+        '96',
+        'Wyrm-Overview',
+        'Long limbless wingless monsters related to dragons.',
+        'The dragons of the deep wood are varied and dangerous.',
+        'Some burrow beneath the earth while others lurk in rivers.',
+      ].join('\n');
+
+      expect(BestiaryStatParser.isStatBlock(block)).toBe(false);
+    });
+
+    it('should return false for an empty block', () => {
+      expect(BestiaryStatParser.isStatBlock('')).toBe(false);
+    });
+  });
 });

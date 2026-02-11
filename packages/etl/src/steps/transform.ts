@@ -86,10 +86,21 @@ export function transformBestiary(mergedBlocks: string[]): Creature[] {
     return [];
   }
 
+  // Filter out overview/descriptive blocks that have no stat block
+  const statBlocks = mergedBlocks.filter((block) =>
+    BestiaryStatParser.isStatBlock(block),
+  );
+  const skipped = mergedBlocks.length - statBlocks.length;
+  if (skipped > 0) {
+    console.log(
+      `    - Skipped ${skipped} overview block(s) with no stat data.`,
+    );
+  }
+
   const creatures: Creature[] = [];
   const errors: Array<{ name: string; error: string }> = [];
 
-  for (const block of mergedBlocks) {
+  for (const block of statBlocks) {
     try {
       const creature = parser.parse(block);
       creatures.push(creature);

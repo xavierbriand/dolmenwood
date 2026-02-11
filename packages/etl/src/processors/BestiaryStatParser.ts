@@ -65,6 +65,14 @@ export class BestiaryStatParser {
   private static readonly PAGE_NUMBER = /^\d+$/;
 
   /**
+   * Check whether a text block contains a stat block (has a Level line).
+   * Use this to filter out overview/descriptive pages before parsing.
+   */
+  public static isStatBlock(block: string): boolean {
+    return /^Level\s+\d+/im.test(block);
+  }
+
+  /**
    * Parse a bestiary creature text block into a Creature object.
    *
    * @param block The full text block including page number, name, description,

@@ -20,15 +20,25 @@ describe.skipIf(!hasSourceData)('Bestiary Pipeline Integration', () => {
   );
   const parser = new BestiaryStatParser();
 
-  it('should have 88 merged creature blocks', () => {
+  it('should have 88 merged blocks total', () => {
     expect(mergedBlocks.length).toBe(88);
   });
 
-  it('should parse at least 87 of 88 creatures (Wyrm overview expected to fail)', () => {
+  it('should identify exactly 1 overview block without stats', () => {
+    const overviews = mergedBlocks.filter(
+      (block) => !BestiaryStatParser.isStatBlock(block),
+    );
+    expect(overviews.length).toBe(1);
+  });
+
+  it('should parse all 87 stat blocks without errors', () => {
+    const statBlocks = mergedBlocks.filter((block) =>
+      BestiaryStatParser.isStatBlock(block),
+    );
     const errors: Array<{ name: string; error: string }> = [];
     const creatures = [];
 
-    for (const block of mergedBlocks) {
+    for (const block of statBlocks) {
       try {
         const creature = parser.parse(block);
         creatures.push(creature);
@@ -43,31 +53,30 @@ describe.skipIf(!hasSourceData)('Bestiary Pipeline Integration', () => {
     }
 
     if (errors.length > 0) {
-      console.warn('Parse errors:', errors);
+      console.error('Parse errors:', errors);
     }
 
-    expect(creatures.length).toBeGreaterThanOrEqual(87);
-    expect(errors.length).toBeLessThanOrEqual(1);
+    expect(errors).toHaveLength(0);
+    expect(creatures).toHaveLength(87);
   });
 
   it('should produce creatures that all validate against CreatureSchema', () => {
+    const statBlocks = mergedBlocks.filter((block) =>
+      BestiaryStatParser.isStatBlock(block),
+    );
     const validationErrors: Array<{
       name: string;
       errors: unknown;
     }> = [];
 
-    for (const block of mergedBlocks) {
-      try {
-        const creature = parser.parse(block);
-        const result = CreatureSchema.safeParse(creature);
-        if (!result.success) {
-          validationErrors.push({
-            name: creature.name,
-            errors: result.error.issues,
-          });
-        }
-      } catch {
-        // Skip blocks that fail to parse (handled in other test)
+    for (const block of statBlocks) {
+      const creature = parser.parse(block);
+      const result = CreatureSchema.safeParse(creature);
+      if (!result.success) {
+        validationErrors.push({
+          name: creature.name,
+          errors: result.error.issues,
+        });
       }
     }
 
@@ -79,15 +88,10 @@ describe.skipIf(!hasSourceData)('Bestiary Pipeline Integration', () => {
   });
 
   it('should produce creatures with valid structural fields', () => {
-    const creatures = mergedBlocks
-      .map((block) => {
-        try {
-          return parser.parse(block);
-        } catch {
-          return null;
-        }
-      })
-      .filter((c) => c !== null);
+    const statBlocks = mergedBlocks.filter((block) =>
+      BestiaryStatParser.isStatBlock(block),
+    );
+    const creatures = statBlocks.map((block) => parser.parse(block));
 
     // First creature
     const first = creatures[0];
@@ -109,15 +113,10 @@ describe.skipIf(!hasSourceData)('Bestiary Pipeline Integration', () => {
   });
 
   it('should have all creatures with type "Bestiary"', () => {
-    const creatures = mergedBlocks
-      .map((block) => {
-        try {
-          return parser.parse(block);
-        } catch {
-          return null;
-        }
-      })
-      .filter((c) => c !== null);
+    const statBlocks = mergedBlocks.filter((block) =>
+      BestiaryStatParser.isStatBlock(block),
+    );
+    const creatures = statBlocks.map((block) => parser.parse(block));
 
     for (const creature of creatures) {
       expect(creature.type).toBe('Bestiary');
@@ -125,18 +124,13 @@ describe.skipIf(!hasSourceData)('Bestiary Pipeline Integration', () => {
   });
 
   it('should produce unique creature names', () => {
-    const creatures = mergedBlocks
-      .map((block) => {
-        try {
-          return parser.parse(block);
-        } catch {
-          return null;
-        }
-      })
-      .filter((c) => c !== null);
+    const statBlocks = mergedBlocks.filter((block) =>
+      BestiaryStatParser.isStatBlock(block),
+    );
+    const creatures = statBlocks.map((block) => parser.parse(block));
 
     const names = creatures.map((c) => c.name);
     const uniqueNames = new Set(names);
-    expect(uniqueNames.size).toBe(creatures.length);
+    expect(uniqueNames.size).toBe(87);
   });
 });
