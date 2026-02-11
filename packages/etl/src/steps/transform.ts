@@ -4,6 +4,7 @@ import { PageMerger } from '../processors/PageMerger.js';
 import { AnimalSlicer } from '../processors/AnimalSlicer.js';
 import { AnimalSplitter } from '../processors/AnimalSplitter.js';
 import { CompactStatParser } from '../processors/CompactStatParser.js';
+import { BestiaryStatParser } from '../processors/BestiaryStatParser.js';
 import type { Creature } from '@dolmenwood/core';
 
 export function normalizeText(rawText: string): {
@@ -74,6 +75,44 @@ export function mergeBestiaryPages(
   console.log(`    - Merged into ${merged.length} creature entries.`);
 
   return merged;
+}
+
+export function transformBestiary(mergedBlocks: string[]): Creature[] {
+  console.log('  - Running Bestiary Pipeline...');
+  const parser = new BestiaryStatParser();
+
+  if (mergedBlocks.length === 0) {
+    console.warn('    - No bestiary blocks to parse. Skipping.');
+    return [];
+  }
+
+  const creatures: Creature[] = [];
+  const errors: Array<{ name: string; error: string }> = [];
+
+  for (const block of mergedBlocks) {
+    try {
+      const creature = parser.parse(block);
+      creatures.push(creature);
+    } catch (e) {
+      // Extract a name hint from the block for error reporting
+      const nameHint =
+        block
+          .split('\n')
+          .find((l) => l.trim() && !/^\d+$/.test(l.trim()))
+          ?.trim() ?? 'Unknown';
+      errors.push({ name: nameHint, error: (e as Error).message });
+    }
+  }
+
+  if (errors.length > 0) {
+    console.warn(`    - Failed to parse ${errors.length} bestiary creatures:`);
+    errors.forEach((e) => console.warn(`      - ${e.name}: ${e.error}`));
+  }
+
+  console.log(
+    `    - Parsed ${creatures.length} bestiary creatures successfully.`,
+  );
+  return creatures;
 }
 
 export function transformAnimals(normalizedText: string): Creature[] {

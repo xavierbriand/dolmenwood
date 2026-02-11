@@ -7,6 +7,7 @@ import { validateReferences } from './steps/validate-refs.js';
 import {
   normalizeText,
   mergeBestiaryPages,
+  transformBestiary,
   transformAnimals,
 } from './steps/transform.js';
 
@@ -76,6 +77,8 @@ program
         'utf-8',
       );
 
+      const bestiaryCreatures = transformBestiary(bestiaryMerged);
+
       // BRANCH: Animals
       console.log('Step 2b: Processing Animals Branch...');
       const animals = transformAnimals(normalizedText);
@@ -85,10 +88,21 @@ program
         'utf-8',
       );
 
+      // Combine all creatures
+      const allCreatures = [...bestiaryCreatures, ...animals];
+      await fs.writeFile(
+        PATHS.INTERMEDIATE_JSON,
+        JSON.stringify(allCreatures, null, 2),
+        'utf-8',
+      );
+
       console.log(`Saved normalized text to: ${PATHS.NORMALIZED_TEXT}`);
       console.log(`Saved creature pages to: ${PATHS.CREATURE_PAGES}`);
       console.log(`Saved bestiary merged to: ${PATHS.BESTIARY_MERGED}`);
       console.log(`Saved animals JSON to: ${PATHS.ANIMALS_JSON}`);
+      console.log(
+        `Saved ${allCreatures.length} creatures to: ${PATHS.INTERMEDIATE_JSON}`,
+      );
       console.log(`Saved parsed TOC to: ${PATHS.TOC_JSON}`);
     } catch (error) {
       console.error('Transformation failed:', error);
@@ -156,6 +170,8 @@ program
         'utf-8',
       );
 
+      const bestiaryCreatures = transformBestiary(bestiaryMerged);
+
       // BRANCH: Animals
       console.log('Step 2b: Processing Animals Branch...');
       const animals = transformAnimals(normalizedText);
@@ -167,8 +183,13 @@ program
 
       console.log(`Saved parsed TOC to: ${PATHS.TOC_JSON}`);
 
-      // Placeholder for parsed creatures
-      await fs.writeFile(PATHS.INTERMEDIATE_JSON, '[]', 'utf-8');
+      // Combine all creatures
+      const allCreatures = [...bestiaryCreatures, ...animals];
+      await fs.writeFile(
+        PATHS.INTERMEDIATE_JSON,
+        JSON.stringify(allCreatures, null, 2),
+        'utf-8',
+      );
 
       // 3. Load
       // console.log('Step 3: Loading...');
