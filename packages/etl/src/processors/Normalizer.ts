@@ -13,6 +13,7 @@ export class Normalizer {
     'Fair y Horse': 'Fairy Horse',
     'GEL ATINOUS APE': 'GELATINOUS APE',
     'hu ng r y': 'hungry',
+    breggleshorthorn: 'breggle-shorthorn',
   };
 
   /**

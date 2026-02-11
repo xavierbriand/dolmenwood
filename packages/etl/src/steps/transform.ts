@@ -8,6 +8,7 @@ import { BestiaryStatParser } from '../processors/BestiaryStatParser.js';
 import { MortalSlicer } from '../processors/MortalSlicer.js';
 import { MortalSplitter } from '../processors/MortalSplitter.js';
 import { MortalStatParser } from '../processors/MortalStatParser.js';
+import { FactionParser } from '../processors/FactionParser.js';
 import type { Creature } from '@dolmenwood/core';
 
 export function normalizeText(rawText: string): {
@@ -234,4 +235,34 @@ export function transformMortals(
 
   console.log(`    - Parsed ${creatures.length} mortals successfully.`);
   return creatures;
+}
+
+/**
+ * Parse the "Creatures and Factions" section from the normalized text
+ * and assign faction arrays to each creature that has a faction affiliation.
+ */
+export function assignFactions(
+  creatures: Creature[],
+  normalizedText: string,
+): Creature[] {
+  console.log('  - Assigning factions...');
+  const parser = new FactionParser();
+  const creatureFactionMap = parser.parse(normalizedText);
+
+  let assigned = 0;
+
+  const result = creatures.map((creature) => {
+    const factions = creatureFactionMap.get(creature.name.toLowerCase());
+    if (factions && factions.length > 0) {
+      assigned++;
+      return { ...creature, faction: factions };
+    }
+    return creature;
+  });
+
+  console.log(
+    `    - Assigned factions to ${assigned} of ${creatures.length} creatures.`,
+  );
+
+  return result;
 }

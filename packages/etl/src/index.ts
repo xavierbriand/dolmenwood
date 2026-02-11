@@ -10,6 +10,7 @@ import {
   transformBestiary,
   transformAnimals,
   transformMortals,
+  assignFactions,
 } from './steps/transform.js';
 
 const program = new Command();
@@ -99,8 +100,11 @@ program
         'utf-8',
       );
 
-      // Combine all creatures
-      const allCreatures = [...bestiaryCreatures, ...animals, ...mortals];
+      // Combine all creatures and assign factions
+      const allCreatures = assignFactions(
+        [...bestiaryCreatures, ...animals, ...mortals],
+        normalizedText,
+      );
       await fs.writeFile(
         PATHS.INTERMEDIATE_JSON,
         JSON.stringify(allCreatures, null, 2),
@@ -205,8 +209,11 @@ program
 
       console.log(`Saved parsed TOC to: ${PATHS.TOC_JSON}`);
 
-      // Combine all creatures
-      const allCreatures = [...bestiaryCreatures, ...animals, ...mortals];
+      // Combine all creatures and assign factions
+      const allCreatures = assignFactions(
+        [...bestiaryCreatures, ...animals, ...mortals],
+        normalizedText,
+      );
       await fs.writeFile(
         PATHS.INTERMEDIATE_JSON,
         JSON.stringify(allCreatures, null, 2),

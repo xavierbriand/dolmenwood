@@ -16,6 +16,7 @@ export const CreatureSchema = z.object({
   kindred: z.string().optional(),
   type: z.string().optional(),
   description: z.string().optional(),
+  faction: z.array(z.string()).optional(),
 });
 
 export type Creature = z.infer<typeof CreatureSchema>;
