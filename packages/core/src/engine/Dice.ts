@@ -16,7 +16,7 @@ export class DiceRoll {
   constructor(
     public readonly count: number,
     public readonly die: Die,
-    public readonly modifier: number = 0
+    public readonly modifier: number = 0,
   ) {}
 
   /**
@@ -33,6 +33,7 @@ export class DiceRoll {
     // (?<sides>\d+) Capture group for sides (required digits)
     // (?<mod>[+-]\d+)? Capture group for modifier (optional + or - followed by digits)
     // \s*$          End of string, optional whitespace
+    // eslint-disable-next-line security/detect-unsafe-regex -- anchored, short dice strings only
     const regex = /^\s*(?<count>\d*)d(?<sides>\d+)(?<mod>[+-]\d+)?\s*$/i;
     const match = expression.match(regex);
 

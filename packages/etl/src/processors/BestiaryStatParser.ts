@@ -37,12 +37,14 @@ export class BestiaryStatParser {
   // "Level 4 AC 14 HP 4d8 (18) Saves D10 R11 H12 B13 S14"
   // HP can be dice notation "4d8 (18)" or text like "By species"
   // Saves letters may have optional space before digits (e.g. "R 5")
+  /* eslint-disable security/detect-unsafe-regex -- linear pattern on controlled ETL input */
   private static readonly STAT_LINE_1 =
     /Level\s+(\d+)\s+AC\s+(\d+)\s+HP\s+([\dd+]+)\s*\((\d+)\)\s+Saves\s+(D\s*\d+\s+R\s*\d+\s+H\s*\d+\s+B\s*\d+\s+S\s*\d+)/i;
 
   // Fallback: HP is non-dice text (e.g. "By species")
   private static readonly STAT_LINE_1_TEXT_HP =
     /Level\s+(\d+)\s+AC\s+(\d+)\s+HP\s+(.+?)\s+Saves\s+(D\s*\d+\s+R\s*\d+\s+H\s*\d+\s+B\s*\d+\s+S\s*\d+)/i;
+  /* eslint-enable security/detect-unsafe-regex */
 
   // --- Bestiary-specific patterns (operate on individual lines or blobs) ---
   private static readonly ATTACKS_PATTERN = /^Attacks?\s+([\s\S]*?)$/im;

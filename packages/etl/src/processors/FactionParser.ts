@@ -59,8 +59,10 @@ export class FactionParser {
     // Each faction entry matches: "FactionName: creature1, creature2."
     // We look for patterns like "Word(s): stuff." where the colon starts the list
     // and a period ends it, followed by either another faction or end of text.
+    /* eslint-disable security/detect-unsafe-regex -- controlled ETL input, not user-facing */
     const entryPattern =
       /([A-ZÀ-Ž][A-Za-zÀ-ž\s]+?):\s*((?:[^.]+\.(?:\s|$))+?(?=\s*[A-ZÀ-Ž][A-Za-zÀ-ž\s]+?:|$))/g;
+    /* eslint-enable security/detect-unsafe-regex */
 
     let match;
     while ((match = entryPattern.exec(collapsed)) !== null) {
