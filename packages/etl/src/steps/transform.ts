@@ -5,6 +5,9 @@ import { AnimalSlicer } from '../processors/AnimalSlicer.js';
 import { AnimalSplitter } from '../processors/AnimalSplitter.js';
 import { CompactStatParser } from '../processors/CompactStatParser.js';
 import { BestiaryStatParser } from '../processors/BestiaryStatParser.js';
+import { MortalSlicer } from '../processors/MortalSlicer.js';
+import { MortalSplitter } from '../processors/MortalSplitter.js';
+import { MortalStatParser } from '../processors/MortalStatParser.js';
 import type { Creature } from '@dolmenwood/core';
 
 export function normalizeText(rawText: string): {
@@ -171,5 +174,64 @@ export function transformAnimals(normalizedText: string): Creature[] {
   }
 
   console.log(`    - Parsed ${creatures.length} animals successfully.`);
+  return creatures;
+}
+
+export function transformMortals(
+  normalizedText: string,
+  tocNames: string[],
+): Creature[] {
+  console.log('  - Running Everyday Mortals Pipeline...');
+  const slicer = new MortalSlicer();
+  const splitter = new MortalSplitter();
+  const parser = new MortalStatParser();
+
+  // Step 1: Slice
+  console.log('    - Slicing Everyday Mortals section...');
+  const mortalsText = slicer.slice(normalizedText);
+  if (!mortalsText) {
+    console.warn(
+      '    - Everyday Mortals section not found in normalized text. Skipping.',
+    );
+    return [];
+  }
+
+  // Step 2: Parse shared stat block
+  console.log('    - Parsing shared stat block...');
+  const sharedStats = parser.parseSharedStatBlock(mortalsText);
+
+  // Step 3: Split into blocks
+  console.log('    - Splitting into creature blocks...');
+  const blocks = splitter.split(mortalsText, tocNames);
+  console.log(`    - Split into ${blocks.length} mortal blocks.`);
+
+  if (blocks.length === 0) {
+    console.warn('    - No mortal blocks found after splitting. Skipping.');
+    return [];
+  }
+
+  // Step 4: Build creatures
+  const creatures: Creature[] = [];
+  const errors: Array<{ name: string; error: string }> = [];
+
+  for (const block of blocks) {
+    try {
+      const creature = parser.buildCreature(
+        block.name,
+        block.text,
+        sharedStats,
+      );
+      creatures.push(creature);
+    } catch (e) {
+      errors.push({ name: block.name, error: (e as Error).message });
+    }
+  }
+
+  if (errors.length > 0) {
+    console.warn(`    - Failed to parse ${errors.length} mortals:`);
+    errors.forEach((e) => console.warn(`      - ${e.name}: ${e.error}`));
+  }
+
+  console.log(`    - Parsed ${creatures.length} mortals successfully.`);
   return creatures;
 }

@@ -24,6 +24,7 @@ export const PATHS = {
   INTERMEDIATE_JSON: path.join(TMP_DIR, 'creatures.json'),
   BESTIARY_MERGED: path.join(TMP_DIR, 'bestiary-merged.json'),
   ANIMALS_JSON: path.join(TMP_DIR, 'animals.json'),
+  MORTALS_JSON: path.join(TMP_DIR, 'mortals.json'),
 
   // Target Asset File
   CREATURES_YAML: path.join(ASSETS_DIR, 'creatures.yaml'),

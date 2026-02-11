@@ -9,6 +9,7 @@ import {
   mergeBestiaryPages,
   transformBestiary,
   transformAnimals,
+  transformMortals,
 } from './steps/transform.js';
 
 const program = new Command();
@@ -88,8 +89,18 @@ program
         'utf-8',
       );
 
+      // BRANCH: Everyday Mortals
+      console.log('Step 2c: Processing Everyday Mortals Branch...');
+      const mortalNames = toc.appendices.everydayMortals.map((e) => e.name);
+      const mortals = transformMortals(normalizedText, mortalNames);
+      await fs.writeFile(
+        PATHS.MORTALS_JSON,
+        JSON.stringify(mortals, null, 2),
+        'utf-8',
+      );
+
       // Combine all creatures
-      const allCreatures = [...bestiaryCreatures, ...animals];
+      const allCreatures = [...bestiaryCreatures, ...animals, ...mortals];
       await fs.writeFile(
         PATHS.INTERMEDIATE_JSON,
         JSON.stringify(allCreatures, null, 2),
@@ -100,6 +111,7 @@ program
       console.log(`Saved creature pages to: ${PATHS.CREATURE_PAGES}`);
       console.log(`Saved bestiary merged to: ${PATHS.BESTIARY_MERGED}`);
       console.log(`Saved animals JSON to: ${PATHS.ANIMALS_JSON}`);
+      console.log(`Saved mortals JSON to: ${PATHS.MORTALS_JSON}`);
       console.log(
         `Saved ${allCreatures.length} creatures to: ${PATHS.INTERMEDIATE_JSON}`,
       );
@@ -181,10 +193,20 @@ program
         'utf-8',
       );
 
+      // BRANCH: Everyday Mortals
+      console.log('Step 2c: Processing Everyday Mortals Branch...');
+      const mortalNamesAll = toc.appendices.everydayMortals.map((e) => e.name);
+      const mortals = transformMortals(normalizedText, mortalNamesAll);
+      await fs.writeFile(
+        PATHS.MORTALS_JSON,
+        JSON.stringify(mortals, null, 2),
+        'utf-8',
+      );
+
       console.log(`Saved parsed TOC to: ${PATHS.TOC_JSON}`);
 
       // Combine all creatures
-      const allCreatures = [...bestiaryCreatures, ...animals];
+      const allCreatures = [...bestiaryCreatures, ...animals, ...mortals];
       await fs.writeFile(
         PATHS.INTERMEDIATE_JSON,
         JSON.stringify(allCreatures, null, 2),
