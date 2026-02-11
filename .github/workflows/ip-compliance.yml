@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   compliance:
-    name: Content IP Scan
+    name: Creator Warden Scan
     runs-on: ubuntu-latest
 
     steps:
