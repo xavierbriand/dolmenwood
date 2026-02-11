@@ -11,6 +11,7 @@
  * If the file is not present (e.g., in CI), the check is skipped gracefully.
  */
 
+import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -114,4 +115,46 @@ export function getAllFiles(dir: string, fileList: string[] = []): string[] {
     }
   }
   return fileList;
+}
+
+/** Directories to protect (relative to repo root). */
+const PROTECTED_PREFIXES = [
+  'packages/core/',
+  'packages/data/',
+  'packages/cli/',
+  'scripts/',
+];
+
+/** Directories exempt from checking. */
+const EXEMPT_PREFIXES = ['packages/etl/'];
+
+/**
+ * Check whether a relative file path is in the protected scope.
+ * Returns true if the file should be scanned.
+ */
+export function isProtectedPath(relPath: string): boolean {
+  if (EXEMPT_PREFIXES.some((p) => relPath.startsWith(p))) return false;
+  return PROTECTED_PREFIXES.some((p) => relPath.startsWith(p));
+}
+
+/**
+ * Get the list of staged files (git diff --cached) that are in scope.
+ * Returns paths relative to the repo root.
+ * Only includes added/modified files (not deleted).
+ */
+export function getStagedFiles(): string[] {
+  const output = execSync('git diff --cached --name-only --diff-filter=ACM', {
+    encoding: 'utf8',
+  }).trim();
+
+  if (!output) return [];
+  return output.split('\n').filter(isProtectedPath);
+}
+
+/**
+ * Read the staged (index) version of a file using git show.
+ * This ensures we check the content being committed, not the working tree.
+ */
+export function readStagedContent(relPath: string): string {
+  return execSync(`git show ":0:${relPath}"`, { encoding: 'utf8' });
 }

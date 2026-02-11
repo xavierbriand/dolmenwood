@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   normalizeForComparison,
   findContentMatch,
+  isProtectedPath,
   MIN_CHUNK_LENGTH,
 } from './ip-check-core.js';
 
@@ -64,6 +65,36 @@ describe('IP Compliance Core', () => {
       expect(line.length).toBeGreaterThanOrEqual(MIN_CHUNK_LENGTH);
       const result = findContentMatch(line, sourceText);
       expect(result).toBeNull();
+    });
+  });
+
+  describe('isProtectedPath', () => {
+    it('should include files in packages/core/', () => {
+      expect(isProtectedPath('packages/core/src/domain/Creature.ts')).toBe(
+        true,
+      );
+    });
+
+    it('should include files in packages/data/', () => {
+      expect(isProtectedPath('packages/data/src/index.ts')).toBe(true);
+    });
+
+    it('should include files in packages/cli/', () => {
+      expect(isProtectedPath('packages/cli/src/index.ts')).toBe(true);
+    });
+
+    it('should include files in scripts/', () => {
+      expect(isProtectedPath('scripts/ip-check.ts')).toBe(true);
+    });
+
+    it('should exclude files in packages/etl/', () => {
+      expect(isProtectedPath('packages/etl/src/steps/extract.ts')).toBe(false);
+    });
+
+    it('should exclude files outside protected directories', () => {
+      expect(isProtectedPath('README.md')).toBe(false);
+      expect(isProtectedPath('.github/workflows/ci.yml')).toBe(false);
+      expect(isProtectedPath('package.json')).toBe(false);
     });
   });
 });

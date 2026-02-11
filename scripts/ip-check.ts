@@ -1,9 +1,13 @@
 /**
  * IP Compliance Check (Pre-commit hook)
  *
- * Scans source files for chunks of content reproduced verbatim from the
+ * Scans staged files for chunks of content reproduced verbatim from the
  * Dolmenwood Monster Book PDF. Protects against accidental inclusion of
  * copyrighted passages in the public repository.
+ *
+ * Usage:
+ *   pnpm tsx scripts/ip-check.ts          # Scan staged files only (pre-commit)
+ *   pnpm tsx scripts/ip-check.ts --all    # Scan all source files (CI / manual)
  *
  * - Requires tmp/etl/dmb-raw.txt (the raw PDF text) to be present locally.
  * - Skips gracefully if the source material is not available (e.g., in CI).
@@ -18,6 +22,9 @@ import {
   normalizeForComparison,
   findContentMatch,
   getAllFiles,
+  getStagedFiles,
+  readStagedContent,
+  isProtectedPath,
   MIN_CHUNK_LENGTH,
   type ContentViolation,
 } from './ip-check-core.js';
@@ -26,27 +33,15 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, '..');
 
-const SCAN_DIRS = [
-  path.join(ROOT_DIR, 'packages', 'core'),
-  path.join(ROOT_DIR, 'packages', 'data'),
-  path.join(ROOT_DIR, 'packages', 'cli'),
-  path.join(ROOT_DIR, 'scripts'),
-];
-
 const IGNORED_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.svg', '.ico']);
 
-function scanFile(
-  filePath: string,
+function scanContent(
+  content: string,
+  relPath: string,
   normalizedSource: string,
-  rootDir: string,
 ): ContentViolation[] {
   const violations: ContentViolation[] = [];
-
-  if (IGNORED_EXTENSIONS.has(path.extname(filePath))) return violations;
-
-  const content = fs.readFileSync(filePath, 'utf8');
   const lines = content.split('\n');
-  const relPath = path.relative(rootDir, filePath);
 
   for (let i = 0; i < lines.length; i++) {
     const normalizedLine = normalizeForComparison(lines[i]);
@@ -64,9 +59,31 @@ function scanFile(
   return violations;
 }
 
+function reportViolations(violations: ContentViolation[]): void {
+  console.error(`\n⚠️  Content violations found: ${violations.length}`);
+  console.error(
+    '   The following lines contain text reproduced from the source material:\n',
+  );
+
+  for (const v of violations) {
+    console.error(`   ${v.file}:${v.line}`);
+    console.error(
+      `   Matched: "${v.matchedChunk.slice(0, 80)}${v.matchedChunk.length > 80 ? '...' : ''}"`,
+    );
+    console.error(`   Context: ${v.context.slice(0, 120)}`);
+    console.error('');
+  }
+
+  console.error('❌ IP check failed. Remove or rephrase the flagged content.');
+  console.error('   Tip: Use generic test data instead of text from the book.');
+}
+
 // Main execution
 (() => {
-  console.log('🛡️  IP Compliance Check: Content-level scan...');
+  const scanAll = process.argv.includes('--all');
+  const mode = scanAll ? 'full scan' : 'staged files';
+
+  console.log(`🛡️  IP Compliance Check (${mode})...`);
 
   const normalizedSource = loadSourceMaterial();
   if (!normalizedSource) {
@@ -83,43 +100,52 @@ function scanFile(
     `📖 Source material loaded (${Math.round(normalizedSource.length / 1024)}KB, threshold: ${MIN_CHUNK_LENGTH} chars).`,
   );
 
-  // Collect all source files (excluding packages/etl/)
-  const sourceFiles: string[] = [];
-  for (const dir of SCAN_DIRS) {
-    sourceFiles.push(...getAllFiles(dir));
-  }
-
-  console.log(
-    `🔍 Scanning ${sourceFiles.length} source files (packages/etl/ excluded)...`,
-  );
-
   const allViolations: ContentViolation[] = [];
-  for (const file of sourceFiles) {
-    const violations = scanFile(file, normalizedSource, ROOT_DIR);
-    allViolations.push(...violations);
+
+  if (scanAll) {
+    // Full scan: walk all protected directories
+    const SCAN_DIRS = [
+      path.join(ROOT_DIR, 'packages', 'core'),
+      path.join(ROOT_DIR, 'packages', 'data'),
+      path.join(ROOT_DIR, 'packages', 'cli'),
+      path.join(ROOT_DIR, 'scripts'),
+    ];
+
+    const sourceFiles: string[] = [];
+    for (const dir of SCAN_DIRS) {
+      sourceFiles.push(...getAllFiles(dir));
+    }
+
+    console.log(
+      `🔍 Scanning ${sourceFiles.length} source files (packages/etl/ excluded)...`,
+    );
+
+    for (const filePath of sourceFiles) {
+      if (IGNORED_EXTENSIONS.has(path.extname(filePath))) continue;
+      const content = fs.readFileSync(filePath, 'utf8');
+      const relPath = path.relative(ROOT_DIR, filePath);
+      allViolations.push(...scanContent(content, relPath, normalizedSource));
+    }
+  } else {
+    // Pre-commit: scan only staged files
+    const stagedFiles = getStagedFiles();
+
+    if (stagedFiles.length === 0) {
+      console.log('   No staged files in protected scope. Nothing to check.');
+      process.exit(0);
+    }
+
+    console.log(`🔍 Scanning ${stagedFiles.length} staged file(s)...`);
+
+    for (const relPath of stagedFiles) {
+      if (IGNORED_EXTENSIONS.has(path.extname(relPath))) continue;
+      const content = readStagedContent(relPath);
+      allViolations.push(...scanContent(content, relPath, normalizedSource));
+    }
   }
 
   if (allViolations.length > 0) {
-    console.error(`\n⚠️  Content violations found: ${allViolations.length}`);
-    console.error(
-      '   The following lines contain text reproduced from the source material:\n',
-    );
-
-    for (const v of allViolations) {
-      console.error(`   ${v.file}:${v.line}`);
-      console.error(
-        `   Matched: "${v.matchedChunk.slice(0, 80)}${v.matchedChunk.length > 80 ? '...' : ''}"`,
-      );
-      console.error(`   Context: ${v.context.slice(0, 120)}`);
-      console.error('');
-    }
-
-    console.error(
-      '❌ IP check failed. Remove or rephrase the flagged content.',
-    );
-    console.error(
-      '   Tip: Use generic test data instead of text from the book.',
-    );
+    reportViolations(allViolations);
     process.exit(1);
   }
 
