@@ -192,13 +192,13 @@ program
       );
 
       // 3. Load
-      // console.log('Step 3: Loading...');
-      // await loadCreatures();
+      console.log('Step 3: Loading...');
+      await loadCreatures();
 
       // 4. Verify
-      // await validateReferences();
+      await validateReferences();
 
-      console.log('\n🎉 Pipeline Complete (Partial)!');
+      console.log('\n🎉 Pipeline Complete!');
     } catch (error) {
       console.error('\n❌ Pipeline Failed:', error);
       process.exit(1);
