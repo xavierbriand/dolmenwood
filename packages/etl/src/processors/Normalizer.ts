@@ -11,6 +11,8 @@ export class Normalizer {
     'C R E AT I O N': 'CREATION',
     'H AT  T Y P E': 'HAT  TYPE',
     'Fair y Horse': 'Fairy Horse',
+    'GEL ATINOUS APE': 'GELATINOUS APE',
+    'hu ng r y': 'hungry',
   };
 
   /**

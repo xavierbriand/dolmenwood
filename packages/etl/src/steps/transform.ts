@@ -1,6 +1,10 @@
 import { Normalizer } from '../processors/Normalizer.js';
 import { Chunker } from '../processors/Chunker.js';
 import { PageMerger } from '../processors/PageMerger.js';
+import { AnimalSlicer } from '../processors/AnimalSlicer.js';
+import { AnimalSplitter } from '../processors/AnimalSplitter.js';
+import { CompactStatParser } from '../processors/CompactStatParser.js';
+import type { Creature } from '@dolmenwood/core';
 
 export function normalizeText(rawText: string): {
   normalizedText: string;
@@ -70,4 +74,52 @@ export function mergeBestiaryPages(
   console.log(`    - Merged into ${merged.length} creature entries.`);
 
   return merged;
+}
+
+export function transformAnimals(normalizedText: string): Creature[] {
+  console.log('  - Running Animals Pipeline...');
+  const slicer = new AnimalSlicer();
+  const splitter = new AnimalSplitter();
+  const parser = new CompactStatParser();
+
+  // Step 1: Slice
+  console.log('    - Slicing Animals section...');
+  const animalsText = slicer.slice(normalizedText);
+  if (!animalsText) {
+    console.warn(
+      '    - Animals section not found in normalized text. Skipping.',
+    );
+    return [];
+  }
+
+  // Step 2: Split
+  console.log('    - Splitting into creature blocks...');
+  const blocks = splitter.split(animalsText);
+  console.log(`    - Split into ${blocks.length} animal blocks.`);
+
+  if (blocks.length === 0) {
+    console.warn('    - No animal blocks found after splitting. Skipping.');
+    return [];
+  }
+
+  // Step 3: Parse each block
+  const creatures: Creature[] = [];
+  const errors: Array<{ name: string; error: string }> = [];
+
+  for (const block of blocks) {
+    try {
+      const creature = parser.parse(block.name, block.text);
+      creatures.push(creature);
+    } catch (e) {
+      errors.push({ name: block.name, error: (e as Error).message });
+    }
+  }
+
+  if (errors.length > 0) {
+    console.warn(`    - Failed to parse ${errors.length} animals:`);
+    errors.forEach((e) => console.warn(`      - ${e.name}: ${e.error}`));
+  }
+
+  console.log(`    - Parsed ${creatures.length} animals successfully.`);
+  return creatures;
 }

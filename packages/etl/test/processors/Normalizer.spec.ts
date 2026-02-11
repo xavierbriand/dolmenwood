@@ -78,6 +78,18 @@ describe('Normalizer', () => {
       const output = normalizer.fixKerning(input);
       expect(output).toBe('BAT, VAMPIRE');
     });
+
+    it('should fix GEL ATINOUS APE kerning artifact', () => {
+      const input = 'GEL ATINOUS APE';
+      const output = normalizer.fixKerning(input);
+      expect(output).toBe('GELATINOUS APE');
+    });
+
+    it('should fix hu ng r y kerning artifact', () => {
+      const input = 'when extremely hu ng r y.';
+      const output = normalizer.fixKerning(input);
+      expect(output).toBe('when extremely hungry.');
+    });
   });
 
   describe('process (Integration)', () => {
