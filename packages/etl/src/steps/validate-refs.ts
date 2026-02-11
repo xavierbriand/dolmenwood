@@ -4,15 +4,6 @@ import yaml from 'js-yaml';
 import chalk from 'chalk';
 import { PATHS } from '../config.js';
 
-interface EncounterTable {
-  table: string;
-  entries: {
-    min: number;
-    max: number;
-    result: string;
-  }[];
-}
-
 interface CreatureData {
   name: string;
 }
@@ -74,12 +65,29 @@ export async function validateReferences(): Promise<void> {
   // 3. Compare and Report
   let missingCount = 0;
   const missingRefs: string[] = [];
+  const deferredRefs: string[] = [];
 
   for (const ref of encounterReferences) {
-    if (!creatureNames.has(normalizeName(ref)) && !isGenericRef(ref)) {
+    if (creatureNames.has(normalizeName(ref)) || isGenericRef(ref)) {
+      continue;
+    }
+    if (DEFERRED_REFS.has(normalizeName(ref))) {
+      deferredRefs.push(ref);
+    } else {
       missingCount++;
       missingRefs.push(ref);
     }
+  }
+
+  if (deferredRefs.length > 0) {
+    console.log(
+      chalk.blue(
+        `\nℹ️  Found ${deferredRefs.length} deferred creature reference(s) (from other source books):`,
+      ),
+    );
+    deferredRefs.sort().forEach((ref) => {
+      console.log(chalk.blue(`   - ${ref}`));
+    });
   }
 
   if (missingCount > 0) {
@@ -147,8 +155,9 @@ function normalizeName(name: string): string {
 }
 
 /**
- * Recursive function to find 'result' fields in the encounters object.
+ * Recursive function to find 'ref' fields in the encounters object.
  * This is a heuristic approach since the encounters YAML structure might vary.
+ * Supports both string refs and array refs (either/or creature choices).
  */
 function extractCreatureReferences(obj: unknown, refs: Set<string>) {
   if (!obj || typeof obj !== 'object') return;
@@ -162,11 +171,23 @@ function extractCreatureReferences(obj: unknown, refs: Set<string>) {
   const record = obj as Record<string, unknown>;
 
   // Check if this object looks like an encounter entry
-  if ('ref' in record && typeof record.ref === 'string') {
-    // Basic filter to avoid non-creature results like "Roll on subtable" or empty strings
-    const res = record.ref.trim();
-    if (res && !res.startsWith('Roll on') && !res.startsWith('See')) {
-      refs.add(res);
+  if ('ref' in record) {
+    if (typeof record.ref === 'string') {
+      // Single creature ref
+      const res = record.ref.trim();
+      if (res && !res.startsWith('Roll on') && !res.startsWith('See')) {
+        refs.add(res);
+      }
+    } else if (Array.isArray(record.ref)) {
+      // Array ref (either/or creature choice)
+      for (const item of record.ref) {
+        if (typeof item === 'string') {
+          const res = item.trim();
+          if (res && !res.startsWith('Roll on') && !res.startsWith('See')) {
+            refs.add(res);
+          }
+        }
+      }
     }
   }
 
@@ -194,3 +215,11 @@ function isGenericRef(ref: string): boolean {
   ];
   return generics.includes(ref.toLowerCase());
 }
+
+/**
+ * Creatures that are known to be from other source books (not in DMB).
+ * These are deferred and reported separately rather than as missing.
+ */
+const DEFERRED_REFS = new Set([
+  'wild hunt', // From Dolmenwood Campaign Book (DCB), not DMB
+]);

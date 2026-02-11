@@ -159,6 +159,56 @@ describe('Table Schemas', () => {
     expect(result.success).toBe(true);
   });
 
+  it('should validate a table entry with a qualifier', () => {
+    const table = {
+      name: 'Test Table',
+      die: '1d4',
+      entries: [
+        {
+          min: 1,
+          max: 2,
+          type: 'Creature',
+          ref: 'Rogue',
+          qualifier: 'Bandit',
+          count: '3d10',
+        },
+        { min: 3, max: 4, type: 'Creature', ref: 'Guard' },
+      ],
+    };
+    const result = RegionTableSchema.safeParse(table);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.entries[0].qualifier).toBe('Bandit');
+      expect(result.data.entries[1].qualifier).toBeUndefined();
+    }
+  });
+
+  it('should validate a table entry with an array ref (either/or creature)', () => {
+    const table = {
+      name: 'Test Table',
+      die: '1d4',
+      entries: [
+        {
+          min: 1,
+          max: 2,
+          type: 'Creature',
+          ref: ['Forest Guard', 'Forest Knight'],
+          count: '1d4',
+        },
+        { min: 3, max: 4, type: 'Creature', ref: 'Scout' },
+      ],
+    };
+    const result = RegionTableSchema.safeParse(table);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.entries[0].ref).toEqual([
+        'Forest Guard',
+        'Forest Knight',
+      ]);
+      expect(result.data.entries[1].ref).toBe('Scout');
+    }
+  });
+
   it('should reject invalid region table (missing entries)', () => {
     const invalidTable = {
       name: 'Generic Forest',
