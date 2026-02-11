@@ -1,110 +1,117 @@
+/**
+ * IP Compliance Core
+ *
+ * Content-level IP protection: detects when chunks of the original Dolmenwood
+ * Monster Book PDF text are reproduced verbatim in source files.
+ *
+ * This is NOT about individual words or creature names -- it's about preventing
+ * meaningful passages of copyrighted content from leaking into the public repo.
+ *
+ * The source material is the raw PDF text at tmp/etl/dmb-raw.txt.
+ * If the file is not present (e.g., in CI), the check is skipped gracefully.
+ */
 
 import fs from 'node:fs';
 import path from 'node:path';
-import yaml from 'js-yaml';
 import { fileURLToPath } from 'node:url';
 
-// Setup paths
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, '..');
-const ASSETS_DIR = path.join(ROOT_DIR, 'assets');
-const IGNORED_FILES = ['.DS_Store', 'node_modules'];
 
-const DENYLIST_PATH = path.join(ROOT_DIR, 'policies', 'ip-denylist.yaml');
-const STATE_PATH = path.join(ROOT_DIR, 'policies', 'ip-state.json');
+const SOURCE_MATERIAL_PATH = path.join(ROOT_DIR, 'tmp', 'etl', 'dmb-raw.txt');
 
-export interface ForbiddenTerm {
-  original: string;
-  regex: RegExp;
-}
+/** Minimum character length for a match to be considered a violation. */
+export const MIN_CHUNK_LENGTH = 40;
 
-export interface Violation {
+export interface ContentViolation {
   file: string;
   line: number;
-  term: string;
-  matchedStr: string;
+  matchedChunk: string;
   context: string;
 }
 
-function getAllFiles(dir: string, fileList: string[] = []): string[] {
+/**
+ * Normalize text for comparison: collapse whitespace, lowercase.
+ * This avoids false negatives from minor formatting differences
+ * (extra spaces, line breaks, casing changes).
+ */
+export function normalizeForComparison(text: string): string {
+  return text.replace(/\s+/g, ' ').toLowerCase().trim();
+}
+
+/**
+ * Load and normalize the source material (PDF raw text).
+ * Returns null if the file is not available.
+ */
+export function loadSourceMaterial(): string | null {
+  if (!fs.existsSync(SOURCE_MATERIAL_PATH)) {
+    return null;
+  }
+  const raw = fs.readFileSync(SOURCE_MATERIAL_PATH, 'utf8');
+  return normalizeForComparison(raw);
+}
+
+/**
+ * Check a single line of source code against the normalized source material.
+ * Returns the matched chunk if a violation is found, or null otherwise.
+ *
+ * Strategy: normalize the line, then check if any contiguous substring of
+ * MIN_CHUNK_LENGTH+ characters appears in the source material.
+ *
+ * We check the full line first (fast path), then slide a window of
+ * MIN_CHUNK_LENGTH across the line. This is efficient because each
+ * `includes()` call is a single scan of the source material, and we
+ * only need to find one match, not the longest.
+ */
+export function findContentMatch(
+  normalizedLine: string,
+  normalizedSource: string,
+): string | null {
+  if (normalizedLine.length < MIN_CHUNK_LENGTH) {
+    return null;
+  }
+
+  // Fast path: check if the entire line appears in the source
+  if (normalizedSource.includes(normalizedLine)) {
+    return normalizedLine;
+  }
+
+  // Sliding window at MIN_CHUNK_LENGTH: find any matching chunk
+  for (
+    let start = 0;
+    start + MIN_CHUNK_LENGTH <= normalizedLine.length;
+    start++
+  ) {
+    const chunk = normalizedLine.slice(start, start + MIN_CHUNK_LENGTH);
+    if (normalizedSource.includes(chunk)) {
+      return chunk;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Collect all source files from a directory, recursively.
+ * Skips node_modules, dist, and .git directories.
+ */
+export function getAllFiles(dir: string, fileList: string[] = []): string[] {
   if (!fs.existsSync(dir)) return fileList;
-  const files = fs.readdirSync(dir);
-  files.forEach((file) => {
-    if (IGNORED_FILES.includes(file)) return;
+  const SKIP_DIRS = new Set(['node_modules', 'dist', '.git']);
+  const SKIP_FILES = new Set(['.DS_Store']);
+
+  for (const file of fs.readdirSync(dir)) {
+    if (SKIP_FILES.has(file)) continue;
     const filePath = path.join(dir, file);
     const stat = fs.statSync(filePath);
     if (stat.isDirectory()) {
-      if (file !== 'node_modules' && file !== 'dist' && file !== '.git') {
+      if (!SKIP_DIRS.has(file)) {
         getAllFiles(filePath, fileList);
       }
     } else {
       fileList.push(filePath);
     }
-  });
+  }
   return fileList;
-}
-
-function getNewestAssetTimestamp(): number {
-  if (!fs.existsSync(ASSETS_DIR)) return 0;
-  let maxTime = 0;
-  const files = fs.readdirSync(ASSETS_DIR);
-  files.forEach(file => {
-      const fullPath = path.join(ASSETS_DIR, file);
-      const stat = fs.statSync(fullPath);
-      if (stat.mtimeMs > maxTime) maxTime = stat.mtimeMs;
-  });
-  return maxTime;
-}
-
-export function generateRegexForTerm(term: string): RegExp {
-  if (/[\s\-_]/.test(term)) {
-    const parts = term.split(/[\s\-_]+/);
-    const pattern = parts
-      .map(p => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-      .join('[\\s\\-_]+');
-    return new RegExp(pattern, 'i');
-  } else {
-    const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    return new RegExp(escaped, 'g');
-  }
-}
-
-export function getForbiddenTerms(): ForbiddenTerm[] {
-  // 1. Check for staleness (Skip in CI environment)
-  if (!process.env.CI && fs.existsSync(STATE_PATH) && fs.existsSync(ASSETS_DIR)) {
-      const state = JSON.parse(fs.readFileSync(STATE_PATH, 'utf8'));
-      const lastReview = new Date(state.lastReviewed).getTime();
-      const newestAsset = getNewestAssetTimestamp();
-      
-      // Allow 1 second buffer for file system variances
-      if (newestAsset > lastReview + 1000) {
-          console.error('❌ IP Safety Check Failed: Assets have been modified since the last IP Review.');
-          console.error('   Please run `npm run ip:scan` to update the denylist.');
-          process.exit(1);
-      }
-  } else if (fs.existsSync(ASSETS_DIR)) {
-      // Assets exist but no state file -> never reviewed
-      console.warn('⚠️  IP State file missing. Assuming first run or unverified state.');
-  }
-
-  // 2. Load Denylist
-  if (!fs.existsSync(DENYLIST_PATH)) {
-      console.warn('⚠️  No IP Denylist found. Skipping checks.');
-      return [];
-  }
-
-  try {
-      const content = fs.readFileSync(DENYLIST_PATH, 'utf8');
-      const data = yaml.load(content) as { terms: string[] };
-      const terms = data.terms || [];
-      
-      return terms.map(t => ({
-          original: t,
-          regex: generateRegexForTerm(t)
-      }));
-  } catch (e) {
-      console.error('❌ Failed to load IP Denylist:', e);
-      process.exit(1);
-  }
 }

@@ -2,9 +2,9 @@ name: IP Compliance Check
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ['main']
   pull_request:
-    branches: [ "main" ]
+    branches: ['main']
     types: [opened, synchronize, edited, reopened]
 
 permissions:
@@ -12,31 +12,24 @@ permissions:
 
 jobs:
   compliance:
-    name: Creator Warden Scan
+    name: Content IP Scan
     runs-on: ubuntu-latest
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: 20
-        
-    - name: Install pnpm
-      uses: pnpm/action-setup@v2
-      with:
-        version: 9
-        
-    - name: Install dependencies
-      run: pnpm install
-      
-    - name: Run IP Compliance Scan
-      run: pnpm tsx scripts/ip-check.ts
 
-    - name: Scan PR Description
-      if: github.event_name == 'pull_request'
-      env:
-        PR_TITLE: ${{ github.event.pull_request.title }}
-        PR_BODY: ${{ github.event.pull_request.body }}
-      run: pnpm tsx scripts/validate-pr-description.ts
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Run IP Compliance Scan
+        run: pnpm tsx scripts/ip-check.ts

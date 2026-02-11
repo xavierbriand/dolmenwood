@@ -7,6 +7,7 @@ This document provides instructions for AI agents and developers working on the 
 This project is a **TypeScript Monorepo** using `pnpm`.
 
 ### Core Commands
+
 - **Install Dependencies:**
   ```bash
   pnpm install
@@ -18,13 +19,15 @@ This project is a **TypeScript Monorepo** using `pnpm`.
   pnpm --filter @dolmenwood/core build
   ```
 - **Run Tests (Vitest):**
+
   ```bash
   # Run all tests
   pnpm test
-  
+
   # Run a specific test file
   pnpm test packages/core/src/domain/SomeTest.spec.ts
   ```
+
 - **Linting & Formatting:**
   ```bash
   pnpm lint
@@ -33,6 +36,7 @@ This project is a **TypeScript Monorepo** using `pnpm`.
   ```
 
 ### Development
+
 - **Run CLI (during dev):**
   Use `tsx` or `ts-node` via package scripts if available, or build and run the node executable.
   ```bash
@@ -70,14 +74,30 @@ For each new feature or fix, strictly follow this loop:
 
 6.  **Merge:**
     - Commit the changes once local CI checks pass.
-    - **NEVER MERGE A BRANCH WITHOUT EXPLICIT CONSENT.** 
+    - **NEVER MERGE A BRANCH WITHOUT EXPLICIT CONSENT.**
     - Always ask the user for confirmation before merging or creating a PR that would result in a merge.
 
-## 3. Proprietary Information (Strict)
+## 3. Intellectual Property
 
-- **Strict Separation:** Any content (e.g., names, statistics, descriptions) that is inside the `@assets/` folder **MUST NOT** be referred to anywhere else in the codebase (code, tests, documentation).
-- **Copyright:** This content is copyrighted. See [Copyright Notice](https://www.dolmenwood.necroticgnome.com/rules/doku.php?id=start).
-- **Test Data:** Use generic placeholders (e.g., "Forest Sprite", "Goblin Scout") in tests and examples.
+This project generates encounters for the **Dolmenwood** TTRPG setting by Necrotic Gnome. The game content (creature stat blocks, descriptions, encounter tables) is copyrighted. See [Copyright Notice](https://www.dolmenwood.necroticgnome.com/rules/doku.php?id=start).
+
+### What we protect against
+
+**Chunks of copyrighted content** — paragraphs of prose, full stat blocks, encounter table reproductions — must not appear in source code, tests, commit messages, or PR descriptions. The risk is reproducing the book in the public repo.
+
+This is **not** about individual words. Creature names like "Mossling" or "Bear" are fine to reference when needed. IP protection is about content, not vocabulary.
+
+### Guidelines
+
+- **Source material stays local:** The `assets/` and `tmp/` directories are `.gitignore`d. They contain proprietary data and must never be committed.
+- **Prefer generic test data:** When writing tests, use generic placeholders (e.g., "Forest Sprite", "Goblin Scout") rather than copying real creature data from the book. This is a code quality preference, not a hard rule.
+- **Don't reproduce the book:** Never paste stat blocks, descriptions, or table entries from the source material into tests, comments, or documentation. Write your own synthetic data that exercises the same code paths.
+- **ETL is exempt:** The `packages/etl/` package transforms raw PDF content into structured data. Its integration tests necessarily reference the real source material — that's expected.
+- **Commit messages and PRs:** Use descriptive language about what the code does, not what the book says. E.g., "add creature parser" not a verbatim creature description.
+
+### Automated enforcement
+
+A pre-commit hook (`scripts/ip-check.ts`) scans source files for passages reproduced from the source PDF (`tmp/etl/dmb-raw.txt`). Any 40+ character chunk found verbatim will block the commit. The check skips gracefully if the PDF text is not available locally (e.g., in CI).
 
 ## 4. Project Architecture
 
@@ -98,34 +118,40 @@ The project follows a **Hexagonal Architecture (Ports & Adapters)** structure wi
 ## 4. Code Style & Conventions
 
 ### Language Standards
+
 - **Runtime:** Node.js v20+ (LTS).
 - **Language:** TypeScript 5.x with **Strict Mode** enabled.
 - **Module System:** **Pure ESM** (`"type": "module"`).
   - **Critical:** You **MUST** use `.js` extensions for relative imports in source code.
+
     ```typescript
     // CORRECT
     import { Encounter } from './Encounter.js';
-    
+
     // INCORRECT (Will fail in Node ESM)
     import { Encounter } from './Encounter';
     ```
 
 ### Naming Conventions
+
 - **Files/Classes:** `PascalCase` (e.g., `EncounterTable.ts`, `RollResult.ts`).
 - **Functions/Variables:** `camelCase` (e.g., `generateEncounter`, `terrainType`).
 - **Interfaces:** `PascalCase` (e.g., `EncounterRepository`). Do not prefix with `I`.
 - **Constants:** `UPPER_SNAKE_CASE` for global constants.
 
 ### Typing Rules
+
 - **No `any`:** Strictly avoid `any`. Use `unknown` if necessary and narrow types safely.
 - **Zod Schemas:** Use `zod` for all data validation at system boundaries (input arguments, file loading).
 - **Discriminated Unions:** Use discriminated unions for domain states (e.g., `type Result = { kind: 'success', data: T } | { kind: 'failure', error: E }`).
 
 ### Error Handling
+
 - **Typed Results:** Prefer returning `Result` types (Success/Failure) over throwing exceptions for domain errors.
 - **Exceptions:** Throw exceptions only for truly exceptional system failures (e.g., out of memory, missing required configuration).
 
 ### Libraries & Patterns
+
 - **Pattern Matching:** Use `ts-pattern` for complex game logic tables (e.g., resolving encounter types based on dice rolls).
 - **Immutability:** Prefer immutable data structures. Methods should return new instances rather than mutating state when possible.
 

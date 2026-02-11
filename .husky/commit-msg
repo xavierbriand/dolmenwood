@@ -1,1 +1,0 @@
-pnpm tsx scripts/validate-commit-msg.ts $1

@@ -1,35 +1,69 @@
-
 import { describe, it, expect } from 'vitest';
-import { generateRegexForTerm } from './ip-check-core.js';
+import {
+  normalizeForComparison,
+  findContentMatch,
+  MIN_CHUNK_LENGTH,
+} from './ip-check-core.js';
 
 describe('IP Compliance Core', () => {
-  describe('generateRegexForTerm', () => {
-    it('should generate exact match regex for single words', () => {
-      const regex = generateRegexForTerm('Goblin');
-      // Case sensitive for single words
-      expect(regex.test('Goblin')).toBe(true);
-      expect(regex.test('goblin')).toBe(false); 
-      expect(regex.test('SuperGoblin')).toBe(true); // Current logic allows substrings
+  describe('normalizeForComparison', () => {
+    it('should collapse whitespace and lowercase', () => {
+      expect(normalizeForComparison('  Hello   World  ')).toBe('hello world');
     });
 
-    it('should generate flexible regex for multi-word terms', () => {
-      const regex = generateRegexForTerm('Forest-Walker');
-      
-      // Should match various separators
-      expect(regex.test('Forest-Walker')).toBe(true);
-      expect(regex.test('Forest Walker')).toBe(true);
-      expect(regex.test('Forest_Walker')).toBe(true);
-      expect(regex.test('Forest  Walker')).toBe(true); // Multiple spaces
+    it('should normalize newlines and tabs to spaces', () => {
+      expect(normalizeForComparison('Line 1\nLine 2\tLine 3')).toBe(
+        'line 1 line 2 line 3',
+      );
+    });
+  });
 
-      // Should be case insensitive for multi-word
-      expect(regex.test('forest walker')).toBe(true);
-      expect(regex.test('FOREST WALKER')).toBe(true);
+  describe('findContentMatch', () => {
+    const sourceText = normalizeForComparison(
+      'A large hairy creature that roams the deep forests hunting for prey in the moonlight. ' +
+        'It has sharp claws and glowing red eyes that can see in complete darkness.',
+    );
+
+    it('should detect a verbatim chunk from source material', () => {
+      const line = normalizeForComparison(
+        'creature that roams the deep forests hunting for prey in the moonlight',
+      );
+      const result = findContentMatch(line, sourceText);
+      expect(result).not.toBeNull();
     });
 
-    it('should escape special characters in terms', () => {
-      const regex = generateRegexForTerm('Mage (Level 1)');
-      expect(regex.test('Mage (Level 1)')).toBe(true);
-      expect(regex.test('Mage (Level 2)')).toBe(false);
+    it('should not flag short lines below the threshold', () => {
+      const line = normalizeForComparison('short text');
+      const result = findContentMatch(line, sourceText);
+      expect(result).toBeNull();
+    });
+
+    it('should not flag content that does not appear in source material', () => {
+      const line = normalizeForComparison(
+        'this is a completely original sentence that does not appear in any book at all ever',
+      );
+      const result = findContentMatch(line, sourceText);
+      expect(result).toBeNull();
+    });
+
+    it('should detect partial line matches via sliding window', () => {
+      // The line has extra content before/after, but a 40+ char chunk matches
+      const line = normalizeForComparison(
+        'DESCRIPTION: sharp claws and glowing red eyes that can see in complete darkness. END',
+      );
+      const result = findContentMatch(line, sourceText);
+      expect(result).not.toBeNull();
+    });
+
+    it('should respect the minimum chunk length threshold', () => {
+      // "glowing red eyes" is in the source but only 16 chars -- below threshold
+      const line = normalizeForComparison(
+        'the beast has glowing red eyes and fangs',
+      );
+      // This is 40 chars but doesn't appear verbatim in source
+      expect(line.length).toBeGreaterThanOrEqual(MIN_CHUNK_LENGTH);
+      const result = findContentMatch(line, sourceText);
+      expect(result).toBeNull();
     });
   });
 });
