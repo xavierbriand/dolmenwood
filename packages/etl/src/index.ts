@@ -11,6 +11,7 @@ import {
   transformAnimals,
   transformMortals,
   assignFactions,
+  transformAdventurers,
 } from './steps/transform.js';
 
 const program = new Command();
@@ -100,9 +101,19 @@ program
         'utf-8',
       );
 
+      // BRANCH: Adventurers
+      console.log('Step 2d: Processing Adventurers Branch...');
+      const adventurerNames = toc.appendices.adventurers.map((e) => e.name);
+      const adventurers = transformAdventurers(normalizedText, adventurerNames);
+      await fs.writeFile(
+        PATHS.ADVENTURERS_JSON,
+        JSON.stringify(adventurers, null, 2),
+        'utf-8',
+      );
+
       // Combine all creatures and assign factions
       const allCreatures = assignFactions(
-        [...bestiaryCreatures, ...animals, ...mortals],
+        [...bestiaryCreatures, ...animals, ...mortals, ...adventurers],
         normalizedText,
       );
       await fs.writeFile(
@@ -116,6 +127,7 @@ program
       console.log(`Saved bestiary merged to: ${PATHS.BESTIARY_MERGED}`);
       console.log(`Saved animals JSON to: ${PATHS.ANIMALS_JSON}`);
       console.log(`Saved mortals JSON to: ${PATHS.MORTALS_JSON}`);
+      console.log(`Saved adventurers JSON to: ${PATHS.ADVENTURERS_JSON}`);
       console.log(
         `Saved ${allCreatures.length} creatures to: ${PATHS.INTERMEDIATE_JSON}`,
       );
@@ -207,11 +219,24 @@ program
         'utf-8',
       );
 
+      // BRANCH: Adventurers
+      console.log('Step 2d: Processing Adventurers Branch...');
+      const adventurerNamesAll = toc.appendices.adventurers.map((e) => e.name);
+      const adventurers = transformAdventurers(
+        normalizedText,
+        adventurerNamesAll,
+      );
+      await fs.writeFile(
+        PATHS.ADVENTURERS_JSON,
+        JSON.stringify(adventurers, null, 2),
+        'utf-8',
+      );
+
       console.log(`Saved parsed TOC to: ${PATHS.TOC_JSON}`);
 
       // Combine all creatures and assign factions
       const allCreatures = assignFactions(
-        [...bestiaryCreatures, ...animals, ...mortals],
+        [...bestiaryCreatures, ...animals, ...mortals, ...adventurers],
         normalizedText,
       );
       await fs.writeFile(

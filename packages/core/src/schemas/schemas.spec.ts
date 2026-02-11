@@ -83,6 +83,66 @@ describe('Encounter Schemas', () => {
     expect(result.success).toBe(true);
     expect(EncounterTypeSchema.safeParse('Invalid').success).toBe(false);
   });
+  it('should validate a creature with variants', () => {
+    const creatureWithVariants = {
+      name: 'Warrior',
+      level: 1,
+      alignment: 'Any',
+      xp: 10,
+      numberAppearing: '2d6',
+      armourClass: 15,
+      movement: 20,
+      hitDice: '1d8',
+      attacks: ['Weapon (+0)'],
+      morale: 7,
+      variants: [
+        {
+          label: 'Level 3 Warrior (Veteran)',
+          level: 3,
+          xp: 40,
+          armourClass: 17,
+          movement: 20,
+          hitDice: '3d8',
+          attacks: ['Weapon (+2)'],
+          morale: 8,
+          numberAppearing: '1d4',
+        },
+        {
+          label: 'Level 5 Warrior (Champion)',
+          level: 5,
+          xp: 260,
+          armourClass: 19,
+          movement: 20,
+          hitDice: '5d8',
+          attacks: ['Weapon (+3)'],
+          morale: 9,
+          numberAppearing: '1',
+        },
+      ],
+    };
+    const result = CreatureSchema.safeParse(creatureWithVariants);
+    expect(result.success).toBe(true);
+  });
+
+  it('should validate a creature without variants', () => {
+    const creatureNoVariants = {
+      name: 'Forest Sprite',
+      level: 2,
+      alignment: 'Neutral',
+      xp: 20,
+      numberAppearing: '1d4',
+      armourClass: 12,
+      movement: 40,
+      hitDice: '2d6',
+      attacks: ['1 x spell (1d6)'],
+      morale: 6,
+    };
+    const result = CreatureSchema.safeParse(creatureNoVariants);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.variants).toBeUndefined();
+    }
+  });
 });
 
 describe('Table Schemas', () => {

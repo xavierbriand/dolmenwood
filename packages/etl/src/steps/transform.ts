@@ -9,6 +9,9 @@ import { MortalSlicer } from '../processors/MortalSlicer.js';
 import { MortalSplitter } from '../processors/MortalSplitter.js';
 import { MortalStatParser } from '../processors/MortalStatParser.js';
 import { FactionParser } from '../processors/FactionParser.js';
+import { AdventurerSlicer } from '../processors/AdventurerSlicer.js';
+import { AdventurerSplitter } from '../processors/AdventurerSplitter.js';
+import { AdventurerStatParser } from '../processors/AdventurerStatParser.js';
 import type { Creature } from '@dolmenwood/core';
 
 export function normalizeText(rawText: string): {
@@ -265,4 +268,55 @@ export function assignFactions(
   );
 
   return result;
+}
+
+export function transformAdventurers(
+  normalizedText: string,
+  tocNames: string[],
+): Creature[] {
+  console.log('  - Running Adventurers Pipeline...');
+  const slicer = new AdventurerSlicer();
+  const splitter = new AdventurerSplitter();
+  const parser = new AdventurerStatParser();
+
+  // Step 1: Slice
+  console.log('    - Slicing Adventurers section...');
+  const adventurersText = slicer.slice(normalizedText);
+  if (!adventurersText) {
+    console.warn(
+      '    - Adventurers section not found in normalized text. Skipping.',
+    );
+    return [];
+  }
+
+  // Step 2: Split into blocks
+  console.log('    - Splitting into class blocks...');
+  const blocks = splitter.split(adventurersText, tocNames);
+  console.log(`    - Split into ${blocks.length} class blocks.`);
+
+  if (blocks.length === 0) {
+    console.warn('    - No adventurer blocks found after splitting. Skipping.');
+    return [];
+  }
+
+  // Step 3: Parse each block
+  const creatures: Creature[] = [];
+  const errors: Array<{ name: string; error: string }> = [];
+
+  for (const block of blocks) {
+    try {
+      const creature = parser.parse(block.name, block.text);
+      creatures.push(creature);
+    } catch (e) {
+      errors.push({ name: block.name, error: (e as Error).message });
+    }
+  }
+
+  if (errors.length > 0) {
+    console.warn(`    - Failed to parse ${errors.length} adventurers:`);
+    errors.forEach((e) => console.warn(`      - ${e.name}: ${e.error}`));
+  }
+
+  console.log(`    - Parsed ${creatures.length} adventurers successfully.`);
+  return creatures;
 }

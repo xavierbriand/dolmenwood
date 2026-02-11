@@ -23,8 +23,8 @@ export const EncounterTypeSchema = z.enum([
   'Creature', // Added to satisfy test "valid EncounterType"
 ]);
 
-export type { Creature } from './creature.js';
-export { CreatureSchema } from './creature.js';
+export type { Creature, CreatureVariant } from './creature.js';
+export { CreatureSchema, CreatureVariantSchema } from './creature.js';
 
 export type EncounterType = z.infer<typeof EncounterTypeSchema>;
 
