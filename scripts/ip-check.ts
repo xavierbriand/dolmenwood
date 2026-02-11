@@ -1,162 +1,156 @@
+/**
+ * IP Compliance Check (Pre-commit hook)
+ *
+ * Scans staged files for chunks of content reproduced verbatim from the
+ * Dolmenwood Monster Book PDF. Protects against accidental inclusion of
+ * copyrighted passages in the public repository.
+ *
+ * Usage:
+ *   pnpm tsx scripts/ip-check.ts          # Scan staged files only (pre-commit)
+ *   pnpm tsx scripts/ip-check.ts --all    # Scan all source files (CI / manual)
+ *
+ * - Requires tmp/etl/dmb-raw.txt (the raw PDF text) to be present locally.
+ * - Skips gracefully if the source material is not available (e.g., in CI).
+ * - Excludes packages/etl/ (ETL code inherently processes the source material).
+ */
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import inquirer from 'inquirer';
-import yaml from 'js-yaml';
-import { getForbiddenTerms, ForbiddenTerm, Violation } from './ip-check-core.js';
+import {
+  loadSourceMaterial,
+  normalizeForComparison,
+  findContentMatch,
+  getAllFiles,
+  getStagedFiles,
+  readStagedContent,
+  isProtectedPath,
+  MIN_CHUNK_LENGTH,
+  type ContentViolation,
+} from './ip-check-core.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, '..');
-const PACKAGES_DIR = path.join(ROOT_DIR, 'packages');
-const SCRIPTS_DIR = path.join(ROOT_DIR, 'scripts');
-const ALLOWLIST_PATH = path.join(ROOT_DIR, 'policies', 'ip-allowlist.yaml');
-const IGNORED_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.svg', '.ico'];
 
-// Duplicate helper locally since it's simple and avoids circular dependencies or complex exports
-const IGNORED_FILES = ['.DS_Store', 'node_modules'];
-function getAllFiles(dir: string, fileList: string[] = []): string[] {
-  if (!fs.existsSync(dir)) return fileList;
-  const files = fs.readdirSync(dir);
-  files.forEach((file) => {
-    if (IGNORED_FILES.includes(file)) return;
-    const filePath = path.join(dir, file);
-    const stat = fs.statSync(filePath);
-    if (stat.isDirectory()) {
-      if (file !== 'node_modules' && file !== 'dist' && file !== '.git') {
-        getAllFiles(filePath, fileList);
-      }
-    } else {
-      fileList.push(filePath);
+const IGNORED_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.svg', '.ico']);
+
+function scanContent(
+  content: string,
+  relPath: string,
+  normalizedSource: string,
+): ContentViolation[] {
+  const violations: ContentViolation[] = [];
+  const lines = content.split('\n');
+
+  for (let i = 0; i < lines.length; i++) {
+    const normalizedLine = normalizeForComparison(lines[i]);
+    const match = findContentMatch(normalizedLine, normalizedSource);
+    if (match) {
+      violations.push({
+        file: relPath,
+        line: i + 1,
+        matchedChunk: match,
+        context: lines[i].trim(),
+      });
     }
-  });
-  return fileList;
-}
-
-interface AllowedException {
-  file: string;
-  term: string;
-}
-
-interface AllowList {
-  exceptions: AllowedException[];
-}
-
-function getAllowList(): AllowedException[] {
-  if (!fs.existsSync(ALLOWLIST_PATH)) return [];
-  try {
-    const content = fs.readFileSync(ALLOWLIST_PATH, 'utf8');
-    const data = yaml.load(content) as AllowList;
-    return data?.exceptions || [];
-  } catch (e) {
-    console.warn('⚠️  Failed to load allow list:', e);
-    return [];
   }
-}
-
-function isAllowed(file: string, term: string, allowList: AllowedException[]): boolean {
-  return allowList.some(ex => ex.file === file && ex.term === term);
-}
-
-function scanCodebase(forbiddenTerms: ForbiddenTerm[]): Violation[] {
-  const violations: Violation[] = [];
-  const sourceFiles = [
-    ...getAllFiles(PACKAGES_DIR),
-    ...getAllFiles(SCRIPTS_DIR)
-  ];
-  const allowList = getAllowList();
-
-  console.log(`🔍 Scanning ${sourceFiles.length} source files for IP violations...`);
-  console.log(`📋 Loaded ${allowList.length} allowed exceptions.`);
-
-  sourceFiles.forEach((file) => {
-    if (IGNORED_EXTENSIONS.includes(path.extname(file))) return;
-    
-    const content = fs.readFileSync(file, 'utf8');
-    const lines = content.split('\n');
-    const relativeFilePath = path.relative(ROOT_DIR, file);
-
-    lines.forEach((line, index) => {
-      // Check 1: Forbidden Terms
-      for (const { original, regex } of forbiddenTerms) {
-        const match = regex.exec(line);
-        if (match) {
-            if (isAllowed(relativeFilePath, original, allowList)) continue;
-            violations.push({
-              file: relativeFilePath,
-              line: index + 1,
-              term: original,
-              matchedStr: match[0],
-              context: line.trim()
-            });
-            break;
-        }
-        regex.lastIndex = 0;
-      }
-    });
-  });
 
   return violations;
 }
 
-// Main Execution
-(async () => {
-  try {
-    console.log('🛡️  Starting Creator Warden IP Compliance Scan (Codebase)...');
-    
-    const forbiddenTerms = getForbiddenTerms();
-    console.log(`📝 Identified ${forbiddenTerms.length} forbidden terms from Assets.`);
+function reportViolations(violations: ContentViolation[]): void {
+  console.error(`\n⚠️  Content violations found: ${violations.length}`);
+  console.error(
+    '   The following lines contain text reproduced from the source material:\n',
+  );
 
-    const violations = scanCodebase(forbiddenTerms);
+  for (const v of violations) {
+    console.error(`   ${v.file}:${v.line}`);
+    console.error(
+      `   Matched: "${v.matchedChunk.slice(0, 80)}${v.matchedChunk.length > 80 ? '...' : ''}"`,
+    );
+    console.error(`   Context: ${v.context.slice(0, 120)}`);
+    console.error('');
+  }
 
-    if (violations.length > 0) {
-      console.error(`\n⚠️  Potential IP Violations Found: ${violations.length}`);
-      
-      const isInteractive = process.stdin.isTTY && process.stdout.isTTY && !process.env.CI;
-      const confirmedViolations: Violation[] = [];
+  console.error('❌ IP check failed. Remove or rephrase the flagged content.');
+  console.error('   Tip: Use generic test data instead of text from the book.');
+}
 
-      for (const v of violations) {
-        console.log(`\n   File: ${v.file}:${v.line}`);
-        console.log(`   Found: "${v.matchedStr}" (Matches Asset: "${v.term}")`);
-        console.log(`   Context: ${v.context}`);
+// Main execution
+(() => {
+  const scanAll = process.argv.includes('--all');
+  const mode = scanAll ? 'full scan' : 'staged files';
 
-        if (isInteractive) {
-           const { isViolation } = await inquirer.prompt([{
-             type: 'confirm',
-             name: 'isViolation',
-             message: 'Is this a prohibited reference to Dolmenwood IP?',
-             default: true
-           }]);
+  console.log(`🛡️  IP Compliance Check (${mode})...`);
 
-           if (isViolation) {
-             confirmedViolations.push(v);
-           } else {
-             console.log(`   ℹ️  To suppress this permanently, add the following to policies/ip-allowlist.yaml:`);
-             console.log(`
-  - file: ${v.file}
-    term: ${v.term}
-    reason: "Reviewed and approved by user"
-`);
-             console.log(`   ❌ You MUST add the exception to the allow list to pass CI.`);
-             confirmedViolations.push(v);
-           }
-        } else {
-          confirmedViolations.push(v);
-        }
-      }
+  const normalizedSource = loadSourceMaterial();
+  if (!normalizedSource) {
+    console.log(
+      'ℹ️  Source material (tmp/etl/dmb-raw.txt) not found. Skipping check.',
+    );
+    console.log(
+      '   This is expected in CI. Run the ETL extract step locally to enable this check.',
+    );
+    process.exit(0);
+  }
 
-      if (confirmedViolations.length > 0) {
-        console.error(`\n❌ IP VALIDATION FAILED: ${confirmedViolations.length} confirmed violations.`);
-        console.error('   ACTION REQUIRED: Remove references or add them to policies/ip-allowlist.yaml.');
-        process.exit(1);
-      }
-    } else {
-      console.log('\n✅ IP Compliance Scan Passed. No violations found.');
+  console.log(
+    `📖 Source material loaded (${Math.round(normalizedSource.length / 1024)}KB, threshold: ${MIN_CHUNK_LENGTH} chars).`,
+  );
+
+  const allViolations: ContentViolation[] = [];
+
+  if (scanAll) {
+    // Full scan: walk all protected directories
+    const SCAN_DIRS = [
+      path.join(ROOT_DIR, 'packages', 'core'),
+      path.join(ROOT_DIR, 'packages', 'data'),
+      path.join(ROOT_DIR, 'packages', 'cli'),
+      path.join(ROOT_DIR, 'scripts'),
+    ];
+
+    const sourceFiles: string[] = [];
+    for (const dir of SCAN_DIRS) {
+      sourceFiles.push(...getAllFiles(dir));
+    }
+
+    console.log(
+      `🔍 Scanning ${sourceFiles.length} source files (packages/etl/ excluded)...`,
+    );
+
+    for (const filePath of sourceFiles) {
+      if (IGNORED_EXTENSIONS.has(path.extname(filePath))) continue;
+      const content = fs.readFileSync(filePath, 'utf8');
+      const relPath = path.relative(ROOT_DIR, filePath);
+      allViolations.push(...scanContent(content, relPath, normalizedSource));
+    }
+  } else {
+    // Pre-commit: scan only staged files
+    const stagedFiles = getStagedFiles();
+
+    if (stagedFiles.length === 0) {
+      console.log('   No staged files in protected scope. Nothing to check.');
       process.exit(0);
     }
-  } catch (error) {
-    console.error('🔥 Fatal Error during scan:', error);
+
+    console.log(`🔍 Scanning ${stagedFiles.length} staged file(s)...`);
+
+    for (const relPath of stagedFiles) {
+      if (IGNORED_EXTENSIONS.has(path.extname(relPath))) continue;
+      const content = readStagedContent(relPath);
+      allViolations.push(...scanContent(content, relPath, normalizedSource));
+    }
+  }
+
+  if (allViolations.length > 0) {
+    reportViolations(allViolations);
     process.exit(1);
   }
+
+  console.log(
+    '\n✅ IP Compliance Check passed. No content reproduced from source material.',
+  );
+  process.exit(0);
 })();
