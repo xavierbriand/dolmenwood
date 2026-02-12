@@ -848,8 +848,12 @@ def extract_mortals(doc: fitz.Document, start_page: int, end_page: int) -> list[
             shared_state = "stats"
             continue
         
-        # Stop at "Basic Details" section (W9Black again) or any AlegreyaSans after stats
-        if in_shared_block and "W9Black" in span["font"] and "Basic" in text:
+        # Stop at "Basic Details" section, any AlegreyaSans header, or new creature name
+        if in_shared_block and (
+            ("W9Black" in span["font"] and "Basic" in text) or
+            is_section_header_font(span) or
+            is_appendix_creature_name_font(span)
+        ):
             flush_shared_stat()
             if shared_state == "abilities":
                 flush_shared_ability()
