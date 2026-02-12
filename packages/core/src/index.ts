@@ -17,3 +17,5 @@ export * from './schemas/session.js';
 export * from './ports/SessionRepository.js';
 export * from './schemas/treasure.js';
 export * from './services/TreasureCodeParser.js';
+export * from './ports/TreasureTableRepository.js';
+export * from './services/TreasureGenerator.js';
