@@ -13,6 +13,7 @@ import {
   assignFactions,
   transformAdventurers,
 } from './steps/transform.js';
+import { transformV2 } from './steps/transform-v2.js';
 
 const program = new Command();
 
@@ -134,6 +135,22 @@ program
       console.log(`Saved parsed TOC to: ${PATHS.TOC_JSON}`);
     } catch (error) {
       console.error('Transformation failed:', error);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('transform-v2')
+  .description(
+    'Transform Python-extracted JSON into creatures (replaces regex pipeline)',
+  )
+  .action(async () => {
+    try {
+      console.log('Step 2 (v2): Transforming via mapper pipeline...');
+      await transformV2();
+      console.log('Transform V2 complete.');
+    } catch (error) {
+      console.error('Transform V2 failed:', error);
       process.exit(1);
     }
   });

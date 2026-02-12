@@ -27,6 +27,12 @@ export const PATHS = {
   MORTALS_JSON: path.join(TMP_DIR, 'mortals.json'),
   ADVENTURERS_JSON: path.join(TMP_DIR, 'adventurers.json'),
 
+  // Python extractor output (PyMuPDF)
+  PY_BESTIARY_JSON: path.join(TMP_DIR, 'dmb-bestiary.json'),
+  PY_ANIMALS_JSON: path.join(TMP_DIR, 'dmb-animals.json'),
+  PY_MORTALS_JSON: path.join(TMP_DIR, 'dmb-mortals.json'),
+  PY_ADVENTURERS_JSON: path.join(TMP_DIR, 'dmb-adventurers.json'),
+
   // Target Asset File
   CREATURES_YAML: path.join(ASSETS_DIR, 'creatures.yaml'),
 

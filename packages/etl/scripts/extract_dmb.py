@@ -626,7 +626,13 @@ def _title_case_name(name: str) -> str:
 def _parse_compact_creature(
     name: str, spans: list[dict], section_name: str
 ) -> Optional[CompactCreature]:
-    """Parse a compact stat block creature from its spans."""
+    """Parse a compact stat block creature from its spans.
+
+    For creatures with variants (adventurers), abilities that follow a variant's
+    stat block are stored inside that variant's ``abilities`` list rather than
+    on the top-level creature.  Non-variant creatures continue to use the
+    creature-level ``abilities`` list.
+    """
     creature = CompactCreature(name=name)
     
     state = "init"  # init, stats, abilities
@@ -637,6 +643,9 @@ def _parse_compact_creature(
     current_variant_label: Optional[str] = None
     current_variant_meta: Optional[str] = None
     current_variant_stats: dict = {}
+    current_variant_abilities: list[dict] = []
+    # Track whether abilities encountered belong to a variant context
+    active_variant_label: Optional[str] = None
     
     def flush_stat():
         nonlocal current_stat_label, current_stat_values
@@ -655,24 +664,34 @@ def _parse_compact_creature(
         if current_ability_label and current_ability_text:
             text = " ".join(current_ability_text).strip()
             text = re.sub(r'\xad\s*', '', text)
-            creature.abilities.append({
+            ability = {
                 "name": current_ability_label.rstrip(":"),
                 "text": text,
-            })
+            }
+            # Route to variant or creature depending on context
+            if active_variant_label is not None:
+                current_variant_abilities.append(ability)
+            else:
+                creature.abilities.append(ability)
         current_ability_label = None
         current_ability_text = []
     
     def flush_variant():
         nonlocal current_variant_label, current_variant_meta, current_variant_stats
+        nonlocal current_variant_abilities, active_variant_label
         if current_variant_label and current_variant_stats:
             variant: dict = {"label": current_variant_label}
             if current_variant_meta:
                 variant["meta"] = current_variant_meta
             variant["stats"] = current_variant_stats
+            if current_variant_abilities:
+                variant["abilities"] = current_variant_abilities
             creature.variants.append(variant)
         current_variant_label = None
         current_variant_meta = None
         current_variant_stats = {}
+        current_variant_abilities = []
+        active_variant_label = None
     
     for span in spans:
         text = span["text"].strip()
@@ -689,8 +708,11 @@ def _parse_compact_creature(
         if is_variant_label_font(span):
             if state == "stats":
                 flush_stat()
+            if state == "abilities":
+                flush_ability()
             flush_variant()
             current_variant_label = text
+            active_variant_label = text
             state = "stats"
             continue
         
@@ -721,7 +743,10 @@ def _parse_compact_creature(
         if is_ability_label_font(span) and state in ("stats", "abilities"):
             if state == "stats":
                 flush_stat()
-                flush_variant()
+                # Keep variant context alive — don't flush_variant() here.
+                # Record that abilities belong to the active variant.
+                if current_variant_label:
+                    active_variant_label = current_variant_label
                 state = "abilities"
             flush_ability()
             current_ability_label = text
@@ -735,9 +760,9 @@ def _parse_compact_creature(
     
     # Final flushes
     flush_stat()
-    flush_variant()
     if state == "abilities":
         flush_ability()
+    flush_variant()
     
     return creature if (creature.stats or creature.variants) else None
 
