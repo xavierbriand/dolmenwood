@@ -13,8 +13,6 @@ import { BestiaryMapper } from '../mappers/BestiaryMapper.js';
 import { AnimalMapper } from '../mappers/AnimalMapper.js';
 import { MortalMapper } from '../mappers/MortalMapper.js';
 import { AdventurerMapper } from '../mappers/AdventurerMapper.js';
-import { FactionParser } from '../processors/FactionParser.js';
-
 import type { RawBestiaryCreature } from '../mappers/BestiaryMapper.js';
 import type { RawAnimalCreature } from '../mappers/AnimalMapper.js';
 import type { RawMortalCreature } from '../mappers/MortalMapper.js';
@@ -32,7 +30,7 @@ async function readJson<T>(filePath: string): Promise<T> {
  * Run the V2 transform pipeline:
  * 1. Read Python-extracted JSON files
  * 2. Map each to Creature[] via type-specific mappers
- * 3. Assign factions using the normalized text
+ * 3. Assign factions from Python-extracted factions JSON
  * 4. Write combined output to creatures.json
  */
 export async function transformV2(): Promise<Creature[]> {
@@ -82,18 +80,24 @@ export async function transformV2(): Promise<Creature[]> {
     ...adventurerCreatures,
   ];
 
-  // 3. Assign factions (reuses existing FactionParser with normalized text)
+  // 3. Assign factions from Python-extracted factions JSON
   console.log('  - Assigning factions...');
   let enrichedCreatures = allCreatures;
 
   try {
-    const normalizedText = await fs.readFile(PATHS.NORMALIZED_TEXT, 'utf-8');
-    const parser = new FactionParser();
-    const creatureFactionMap = parser.parse(normalizedText);
+    const factionMap = await readJson<Record<string, string[]>>(
+      PATHS.PY_FACTIONS_JSON,
+    );
+
+    // Build a lowercase-keyed lookup for case-insensitive matching
+    const lowerFactionMap = new Map<string, string[]>();
+    for (const [name, factions] of Object.entries(factionMap)) {
+      lowerFactionMap.set(name.toLowerCase(), factions);
+    }
 
     let assigned = 0;
     enrichedCreatures = allCreatures.map((creature) => {
-      const factions = creatureFactionMap.get(creature.name.toLowerCase());
+      const factions = lowerFactionMap.get(creature.name.toLowerCase());
       if (factions && factions.length > 0) {
         assigned++;
         return { ...creature, faction: factions };
@@ -104,11 +108,9 @@ export async function transformV2(): Promise<Creature[]> {
       `    - Assigned factions to ${assigned} of ${allCreatures.length} creatures.`,
     );
   } catch {
+    console.warn('    - Factions JSON not found, skipping faction assignment.');
     console.warn(
-      '    - Normalized text not found, skipping faction assignment.',
-    );
-    console.warn(
-      '      Run the legacy "extract" + "transform" first, or provide dmb-normalized.md.',
+      '      Run the Python extractor first: python3 packages/etl/scripts/extract_dmb.py',
     );
   }
 

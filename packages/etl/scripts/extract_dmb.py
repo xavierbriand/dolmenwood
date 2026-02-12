@@ -1113,6 +1113,127 @@ def extract_mortals(doc: fitz.Document, start_page: int, end_page: int) -> list[
 
 
 # ---------------------------------------------------------------------------
+# Faction extraction
+# ---------------------------------------------------------------------------
+
+def _normalize_creature_name(raw: str) -> str:
+    """Normalize a creature name to Title-Case with hyphens.
+
+    - Replaces em-dashes (—) with hyphens (-)
+    - Strips parenthetical notes like "(may serve the Cold Prince)"
+    - Title-cases each word/hyphen segment
+    - Removes soft hyphens and collapses whitespace around hyphens
+    """
+    name = raw.strip().rstrip(".")
+    # Remove soft hyphens
+    name = re.sub(r"\xad\s*", "", name)
+    # Strip parenthetical notes
+    name = re.sub(r"\s*\([^)]*\)", "", name)
+    # Replace em-dash with hyphen
+    name = name.replace("\u2014", "-")
+    name = name.replace("\u2013", "-")
+    # Collapse whitespace around hyphens: "Breggle- Shorthorn" -> "Breggle-Shorthorn"
+    name = re.sub(r"\s*-\s*", "-", name)
+    # Collapse remaining multiple spaces
+    name = re.sub(r"\s+", " ", name).strip()
+
+    # Title-case each part (split on hyphens and spaces, preserving delimiters)
+    parts = re.split(r"(-|\s)", name)
+    return "".join(
+        p.capitalize() if p not in ("-", " ") else p for p in parts
+    )
+
+
+def extract_factions(doc: fitz.Document) -> dict[str, list[str]]:
+    """Extract the 'Creatures and Factions' section from the intro pages.
+
+    Returns a dict mapping creature name (Title-Case) to a list of faction
+    names, e.g. {"Centaur-Bestial": ["Atanuwë"], "Knight": ["Human nobility",
+    "Longhorn nobility"]}.
+    """
+    # The section is on one of the first ~10 pages.  Scan for the heading.
+    faction_page: Optional[int] = None
+    for page_num in range(min(15, len(doc))):
+        page = doc[page_num]
+        spans = collect_spans(page)
+        for span in spans:
+            if "Creatures and Factions" in span["text"] and "W9Black" in span["font"]:
+                faction_page = page_num
+                break
+        if faction_page is not None:
+            break
+
+    if faction_page is None:
+        print("  Warning: 'Creatures and Factions' heading not found.")
+        return {}
+
+    # Collect spans from just that page (factions section fits on one page).
+    spans = collect_spans(doc[faction_page])
+
+    # Walk spans after the heading, collecting faction -> creature list.
+    factions: dict[str, list[str]] = {}  # faction name -> creature names
+    in_section = False
+    current_faction: Optional[str] = None
+    current_text_parts: list[str] = []
+
+    def flush_faction():
+        nonlocal current_faction, current_text_parts
+        if current_faction and current_text_parts:
+            raw_text = " ".join(current_text_parts)
+            # Re-join words broken by soft hyphens across spans:
+            # "yick \xad erwill" -> "yickerwill"
+            raw_text = re.sub(r"\s*\xad\s*", "", raw_text)
+            # Collapse multiple spaces
+            raw_text = re.sub(r"\s+", " ", raw_text)
+            creature_names = [
+                _normalize_creature_name(c)
+                for c in raw_text.split(",")
+                if c.strip() and c.strip() != "."
+            ]
+            creature_names = [n for n in creature_names if n]
+            factions[current_faction] = creature_names
+        current_faction = None
+        current_text_parts = []
+
+    for span in spans:
+        text = span["text"].strip()
+        if not text:
+            continue
+
+        # Detect start of the section
+        if "Creatures and Factions" in text and "W9Black" in span["font"]:
+            in_section = True
+            continue
+
+        if not in_section:
+            continue
+
+        # Stop when we hit a new section heading (W9Black) or leave the page
+        if "W9Black" in span["font"] and "Creatures and Factions" not in text:
+            break
+
+        # Bold span = faction label (e.g. "Atanuwë:")
+        if "W7Bold" in span["font"] and not ("Itali" in span["font"]):
+            flush_faction()
+            current_faction = text.rstrip(":")
+            continue
+
+        # Plain/italic text = creature list continuation
+        if current_faction and ("W5Plain" in span["font"] or "Itali" in span["font"]):
+            current_text_parts.append(text)
+
+    flush_faction()
+
+    # Build reverse map: creature -> [faction, ...]
+    creature_factions: dict[str, list[str]] = {}
+    for faction_name, creatures in factions.items():
+        for creature in creatures:
+            creature_factions.setdefault(creature, []).append(faction_name)
+
+    return creature_factions
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -1179,6 +1300,14 @@ def main():
         with open(adventurers_path, "w") as f:
             json.dump(adventurers, f, indent=2, ensure_ascii=False)
         print(f"Wrote {len(adventurers)} adventurers to {adventurers_path}")
+    
+    # 6. Extract factions
+    print("\n--- Extracting Factions ---")
+    creature_factions = extract_factions(doc)
+    factions_path = os.path.join(output_dir, "dmb-factions.json")
+    with open(factions_path, "w") as f:
+        json.dump(creature_factions, f, indent=2, ensure_ascii=False)
+    print(f"Wrote {len(creature_factions)} creature-faction mappings to {factions_path}")
     
     doc.close()
     print("\nDone!")

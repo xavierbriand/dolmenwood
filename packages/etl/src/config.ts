@@ -13,25 +13,15 @@ const ASSETS_DIR = path.join(PROJECT_ROOT, 'assets');
 export const PATHS = {
   TMP_DIR: TMP_DIR,
 
-  // Source PDF (User provided)
-  PDF_SOURCE: path.join(TMP_DIR, 'DMB.pdf'),
-
-  // Intermediate Files
-  RAW_TEXT: path.join(TMP_DIR, 'dmb-raw.txt'),
-  NORMALIZED_TEXT: path.join(TMP_DIR, 'dmb-normalized.md'),
-  CREATURE_PAGES: path.join(TMP_DIR, 'creatures-pages.json'),
-  TOC_JSON: path.join(TMP_DIR, 'toc.json'),
+  // Pipeline output (consumed by load step)
   INTERMEDIATE_JSON: path.join(TMP_DIR, 'creatures.json'),
-  BESTIARY_MERGED: path.join(TMP_DIR, 'bestiary-merged.json'),
-  ANIMALS_JSON: path.join(TMP_DIR, 'animals.json'),
-  MORTALS_JSON: path.join(TMP_DIR, 'mortals.json'),
-  ADVENTURERS_JSON: path.join(TMP_DIR, 'adventurers.json'),
 
   // Python extractor output (PyMuPDF)
   PY_BESTIARY_JSON: path.join(TMP_DIR, 'dmb-bestiary.json'),
   PY_ANIMALS_JSON: path.join(TMP_DIR, 'dmb-animals.json'),
   PY_MORTALS_JSON: path.join(TMP_DIR, 'dmb-mortals.json'),
   PY_ADVENTURERS_JSON: path.join(TMP_DIR, 'dmb-adventurers.json'),
+  PY_FACTIONS_JSON: path.join(TMP_DIR, 'dmb-factions.json'),
 
   // Target Asset File
   CREATURES_YAML: path.join(ASSETS_DIR, 'creatures.yaml'),
