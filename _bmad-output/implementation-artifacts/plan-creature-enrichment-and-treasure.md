@@ -468,8 +468,8 @@ A3 depends on A1+A2. B3 depends on B2. B4 depends on B2+B3. B6 depends on A3+B4.
 - TreasureGenerator: unit tests with seeded RNG and known table data, verifying rolled values
 - Integration: end-to-end pipeline run comparing enriched output against current 158-creature baseline (no regressions)
 
-## Open Questions
+## Resolved Questions
 
-1. **Garbled treasure values** — At least 2 creatures have corrupted treasure strings (description text leaked into the treasure field). The Python extractor should fix these since it can precisely identify the `Hoard` bold label boundary.
-2. **Magic item detail depth** — Rolling on the Magic Item Type table gives a category (e.g., "Potion"). Rolling on the Potion sub-table gives a specific item (e.g., "Aethers of Starlight"). Do we want full depth (specific items) or stop at category? Recommendation: full depth — the tables are finite and the data is already being extracted.
-3. **Possessions vs Hoard distinction** — In the encounter flow, possessions are carried by wandering creatures; hoards are found in lairs. The encounter rules (step 3) have a 30% base chance of being in lair. Should we roll possessions for wandering encounters and hoard for lair encounters? Recommendation: yes, this matches the source rules.
+1. **Garbled treasure values** — ✅ Fix via Python extractor. PyMuPDF can precisely identify the `Hoard` bold label boundary, fixing the 2 corrupted treasure strings at the source.
+2. **Magic item detail depth** — ✅ Full depth. Roll all the way to specific items (e.g., "Aethers of Starlight") with values and summaries. The tables are finite and already being extracted.
+3. **Possessions vs Hoard distinction** — ✅ Context-dependent. Roll possessions for wandering encounters and hoard for lair encounters (30% base lair chance per encounter rules).
