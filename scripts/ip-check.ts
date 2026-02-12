@@ -109,6 +109,7 @@ function reportViolations(violations: ContentViolation[]): void {
       path.join(ROOT_DIR, 'packages', 'data'),
       path.join(ROOT_DIR, 'packages', 'cli'),
       path.join(ROOT_DIR, 'scripts'),
+      path.join(ROOT_DIR, '_bmad-output'),
     ];
 
     const sourceFiles: string[] = [];
