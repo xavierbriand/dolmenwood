@@ -123,6 +123,7 @@ const PROTECTED_PREFIXES = [
   'packages/data/',
   'packages/cli/',
   'scripts/',
+  '_bmad-output/',
 ];
 
 /** Directories exempt from checking. */

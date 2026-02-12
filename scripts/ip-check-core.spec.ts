@@ -91,6 +91,14 @@ describe('IP Compliance Core', () => {
       expect(isProtectedPath('packages/etl/src/steps/extract.ts')).toBe(false);
     });
 
+    it('should include files in _bmad-output/', () => {
+      expect(
+        isProtectedPath(
+          '_bmad-output/implementation-artifacts/plan-dcb-hex-data-extraction.md',
+        ),
+      ).toBe(true);
+    });
+
     it('should exclude files outside protected directories', () => {
       expect(isProtectedPath('README.md')).toBe(false);
       expect(isProtectedPath('.github/workflows/ci.yml')).toBe(false);
