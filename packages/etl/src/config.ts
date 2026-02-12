@@ -22,6 +22,7 @@ export const PATHS = {
   PY_MORTALS_JSON: path.join(TMP_DIR, 'dmb-mortals.json'),
   PY_ADVENTURERS_JSON: path.join(TMP_DIR, 'dmb-adventurers.json'),
   PY_FACTIONS_JSON: path.join(TMP_DIR, 'dmb-factions.json'),
+  PY_DCB_TREASURE_JSON: path.join(TMP_DIR, 'dcb-treasure-tables.json'),
 
   // Target Asset File
   CREATURES_YAML: path.join(ASSETS_DIR, 'creatures.yaml'),
