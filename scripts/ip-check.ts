@@ -2,15 +2,16 @@
  * IP Compliance Check (Pre-commit hook)
  *
  * Scans staged files for chunks of content reproduced verbatim from the
- * Dolmenwood Monster Book PDF. Protects against accidental inclusion of
+ * Dolmenwood source book PDFs. Protects against accidental inclusion of
  * copyrighted passages in the public repository.
  *
  * Usage:
  *   pnpm tsx scripts/ip-check.ts          # Scan staged files only (pre-commit)
  *   pnpm tsx scripts/ip-check.ts --all    # Scan all source files (CI / manual)
  *
- * - Requires tmp/etl/dmb-raw.txt (the raw PDF text) to be present locally.
- * - Skips gracefully if the source material is not available (e.g., in CI).
+ * - Requires tmp/etl/*-raw.txt files (raw PDF text) to be present locally.
+ *   Generate them with: python3 packages/etl/scripts/extract_raw_text.py
+ * - Skips gracefully if no source material is available (e.g., in CI).
  * - Excludes packages/etl/ (ETL code inherently processes the source material).
  */
 
@@ -88,11 +89,9 @@ function reportViolations(violations: ContentViolation[]): void {
   const normalizedSource = loadSourceMaterial();
   if (!normalizedSource) {
     console.log(
-      'ℹ️  Source material (tmp/etl/dmb-raw.txt) not found. Skipping check.',
+      'ℹ️  Source material (tmp/etl/*-raw.txt) not found. Skipping check.',
     );
-    console.log(
-      '   This is expected in CI. Run the ETL extract step locally to enable this check.',
-    );
+    console.log('   Run: python3 packages/etl/scripts/extract_raw_text.py');
     process.exit(0);
   }
 

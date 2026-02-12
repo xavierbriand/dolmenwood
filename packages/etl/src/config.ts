@@ -13,6 +13,19 @@ const ASSETS_DIR = path.join(PROJECT_ROOT, 'assets');
 export const PATHS = {
   TMP_DIR: TMP_DIR,
 
+  // Source PDFs
+  DMB_PDF: path.join(TMP_DIR, 'DMB.pdf'),
+  DCB_PDF: path.join(TMP_DIR, 'DCB.pdf'),
+
+  // Raw text extraction script (for IP compliance)
+  EXTRACT_RAW_TEXT_SCRIPT: path.join(
+    PROJECT_ROOT,
+    'packages',
+    'etl',
+    'scripts',
+    'extract_raw_text.py',
+  ),
+
   // Pipeline output (consumed by load step)
   INTERMEDIATE_JSON: path.join(TMP_DIR, 'creatures.json'),
 

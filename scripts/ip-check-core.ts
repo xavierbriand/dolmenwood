@@ -2,13 +2,14 @@
  * IP Compliance Core
  *
  * Content-level IP protection: detects when chunks of the original Dolmenwood
- * Monster Book PDF text are reproduced verbatim in source files.
+ * source book PDF text are reproduced verbatim in source files.
  *
  * This is NOT about individual words or creature names -- it's about preventing
  * meaningful passages of copyrighted content from leaking into the public repo.
  *
- * The source material is the raw PDF text at tmp/etl/dmb-raw.txt.
- * If the file is not present (e.g., in CI), the check is skipped gracefully.
+ * The source material is extracted raw text at tmp/etl/*-raw.txt (one per book).
+ * Generate these files with: python3 packages/etl/scripts/extract_raw_text.py
+ * If no files are present (e.g., in CI), the check is skipped gracefully.
  */
 
 import { execSync } from 'node:child_process';
@@ -20,7 +21,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, '..');
 
-const SOURCE_MATERIAL_PATH = path.join(ROOT_DIR, 'tmp', 'etl', 'dmb-raw.txt');
+const SOURCE_MATERIAL_DIR = path.join(ROOT_DIR, 'tmp', 'etl');
+const SOURCE_MATERIAL_SUFFIX = '-raw.txt';
 
 /** Minimum character length for a match to be considered a violation. */
 export const MIN_CHUNK_LENGTH = 40;
@@ -42,15 +44,28 @@ export function normalizeForComparison(text: string): string {
 }
 
 /**
- * Load and normalize the source material (PDF raw text).
- * Returns null if the file is not available.
+ * Load and normalize source material from all *-raw.txt files in tmp/etl/.
+ * Returns null if no source material files are available.
  */
 export function loadSourceMaterial(): string | null {
-  if (!fs.existsSync(SOURCE_MATERIAL_PATH)) {
+  if (!fs.existsSync(SOURCE_MATERIAL_DIR)) {
     return null;
   }
-  const raw = fs.readFileSync(SOURCE_MATERIAL_PATH, 'utf8');
-  return normalizeForComparison(raw);
+
+  const rawFiles = fs
+    .readdirSync(SOURCE_MATERIAL_DIR)
+    .filter((f) => f.endsWith(SOURCE_MATERIAL_SUFFIX))
+    .sort();
+
+  if (rawFiles.length === 0) {
+    return null;
+  }
+
+  const combined = rawFiles
+    .map((f) => fs.readFileSync(path.join(SOURCE_MATERIAL_DIR, f), 'utf8'))
+    .join('\n');
+
+  return normalizeForComparison(combined);
 }
 
 /**
