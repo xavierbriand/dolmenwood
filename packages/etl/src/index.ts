@@ -1,4 +1,5 @@
 import { Command } from 'commander';
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs/promises';
 import { PATHS } from './config.js';
 import { loadCreatures } from './steps/load.js';
@@ -27,6 +28,21 @@ program
   .description('Remove intermediate files in tmp/etl')
   .action(async () => {
     await cleanTmp();
+  });
+
+program
+  .command('extract-text')
+  .description('Extract raw text from PDFs for IP compliance checking')
+  .action(async () => {
+    try {
+      console.log('Extracting raw text from PDFs...');
+      execFileSync('python3', [PATHS.EXTRACT_RAW_TEXT_SCRIPT, PATHS.TMP_DIR], {
+        stdio: 'inherit',
+      });
+    } catch (error) {
+      console.error('Text extraction failed:', error);
+      process.exit(1);
+    }
   });
 
 program
