@@ -1,18 +1,9 @@
 import { Command } from 'commander';
 import fs from 'node:fs/promises';
 import { PATHS } from './config.js';
-import { extractText } from './steps/extract.js';
 import { loadCreatures } from './steps/load.js';
 import { validateReferences } from './steps/validate-refs.js';
-import {
-  normalizeText,
-  mergeBestiaryPages,
-  transformBestiary,
-  transformAnimals,
-  transformMortals,
-  assignFactions,
-  transformAdventurers,
-} from './steps/transform.js';
+import { transformV2 } from './steps/transform-v2.js';
 
 const program = new Command();
 
@@ -25,7 +16,7 @@ async function cleanTmp() {
   console.log('Cleaning temporary files...');
   try {
     await fs.rm(PATHS.TMP_DIR, { recursive: true, force: true });
-    console.log('✅ Cleaned tmp/etl/');
+    console.log('Cleaned tmp/etl/');
   } catch (error) {
     console.error('Failed to clean:', error);
   }
@@ -39,101 +30,17 @@ program
   });
 
 program
-  .command('extract')
-  .description('Extract text from PDF to raw text file')
-  .action(async () => {
-    try {
-      console.log('Step 1: Extracting...');
-      await fs.mkdir(PATHS.TMP_DIR, { recursive: true });
-      const text = await extractText();
-      await fs.writeFile(PATHS.RAW_TEXT, text, 'utf-8');
-      console.log(`Extraction complete. Saved to: ${PATHS.RAW_TEXT}`);
-    } catch (error) {
-      console.error('Extraction failed:', error);
-      process.exit(1);
-    }
-  });
-
-program
   .command('transform')
-  .description('Transform raw text to intermediate JSON')
+  .description(
+    'Transform Python-extracted JSON into creatures (mapper pipeline)',
+  )
   .action(async () => {
     try {
-      console.log('Step 2: Transforming...');
-      const text = await fs.readFile(PATHS.RAW_TEXT, 'utf-8');
-      const { normalizedText, pages, toc } = normalizeText(text);
-
-      await fs.writeFile(PATHS.NORMALIZED_TEXT, normalizedText, 'utf-8');
-      await fs.writeFile(
-        PATHS.CREATURE_PAGES,
-        JSON.stringify(pages, null, 2),
-        'utf-8',
-      );
-      await fs.writeFile(PATHS.TOC_JSON, JSON.stringify(toc, null, 2), 'utf-8');
-
-      // BRANCH: Bestiary
-      console.log('Step 2a: Processing Bestiary Branch...');
-      const bestiaryMerged = mergeBestiaryPages(pages, toc);
-      await fs.writeFile(
-        PATHS.BESTIARY_MERGED,
-        JSON.stringify(bestiaryMerged, null, 2),
-        'utf-8',
-      );
-
-      const bestiaryCreatures = transformBestiary(bestiaryMerged);
-
-      // BRANCH: Animals
-      console.log('Step 2b: Processing Animals Branch...');
-      const animals = transformAnimals(normalizedText);
-      await fs.writeFile(
-        PATHS.ANIMALS_JSON,
-        JSON.stringify(animals, null, 2),
-        'utf-8',
-      );
-
-      // BRANCH: Everyday Mortals
-      console.log('Step 2c: Processing Everyday Mortals Branch...');
-      const mortalNames = toc.appendices.everydayMortals.map((e) => e.name);
-      const mortals = transformMortals(normalizedText, mortalNames);
-      await fs.writeFile(
-        PATHS.MORTALS_JSON,
-        JSON.stringify(mortals, null, 2),
-        'utf-8',
-      );
-
-      // BRANCH: Adventurers
-      console.log('Step 2d: Processing Adventurers Branch...');
-      const adventurerNames = toc.appendices.adventurers.map((e) => e.name);
-      const adventurers = transformAdventurers(normalizedText, adventurerNames);
-      await fs.writeFile(
-        PATHS.ADVENTURERS_JSON,
-        JSON.stringify(adventurers, null, 2),
-        'utf-8',
-      );
-
-      // Combine all creatures and assign factions
-      const allCreatures = assignFactions(
-        [...bestiaryCreatures, ...animals, ...mortals, ...adventurers],
-        normalizedText,
-      );
-      await fs.writeFile(
-        PATHS.INTERMEDIATE_JSON,
-        JSON.stringify(allCreatures, null, 2),
-        'utf-8',
-      );
-
-      console.log(`Saved normalized text to: ${PATHS.NORMALIZED_TEXT}`);
-      console.log(`Saved creature pages to: ${PATHS.CREATURE_PAGES}`);
-      console.log(`Saved bestiary merged to: ${PATHS.BESTIARY_MERGED}`);
-      console.log(`Saved animals JSON to: ${PATHS.ANIMALS_JSON}`);
-      console.log(`Saved mortals JSON to: ${PATHS.MORTALS_JSON}`);
-      console.log(`Saved adventurers JSON to: ${PATHS.ADVENTURERS_JSON}`);
-      console.log(
-        `Saved ${allCreatures.length} creatures to: ${PATHS.INTERMEDIATE_JSON}`,
-      );
-      console.log(`Saved parsed TOC to: ${PATHS.TOC_JSON}`);
+      console.log('Step 1: Transforming via mapper pipeline...');
+      await transformV2();
+      console.log('Transform complete.');
     } catch (error) {
-      console.error('Transformation failed:', error);
+      console.error('Transform failed:', error);
       process.exit(1);
     }
   });
@@ -143,7 +50,7 @@ program
   .description('Validate and load JSON to YAML assets')
   .action(async () => {
     try {
-      console.log('Step 3: Loading...');
+      console.log('Step 2: Loading...');
       await loadCreatures();
 
       // Auto-run validation after load
@@ -163,7 +70,7 @@ program
 
 program
   .command('all')
-  .description('Run full ETL pipeline')
+  .description('Run full ETL pipeline (assumes Python extractor has been run)')
   .option('-c, --clean', 'Clean temporary files before starting')
   .action(async (options) => {
     try {
@@ -171,90 +78,20 @@ program
         await cleanTmp();
       }
 
-      // 1. Extract
-      console.log('Step 1: Extracting...');
-      await fs.mkdir(PATHS.TMP_DIR, { recursive: true });
-      const text = await extractText();
-      await fs.writeFile(PATHS.RAW_TEXT, text, 'utf-8');
+      // 1. Transform (Python JSON -> creatures.json)
+      console.log('Step 1: Transforming via mapper pipeline...');
+      await transformV2();
 
-      // 2. Transform
-      console.log('Step 2: Transforming...');
-      const { normalizedText, pages, toc } = normalizeText(text);
-
-      await fs.writeFile(PATHS.NORMALIZED_TEXT, normalizedText, 'utf-8');
-      await fs.writeFile(
-        PATHS.CREATURE_PAGES,
-        JSON.stringify(pages, null, 2),
-        'utf-8',
-      );
-      await fs.writeFile(PATHS.TOC_JSON, JSON.stringify(toc, null, 2), 'utf-8');
-
-      // BRANCH: Bestiary
-      console.log('Step 2a: Processing Bestiary Branch...');
-      const bestiaryMerged = mergeBestiaryPages(pages, toc);
-      await fs.writeFile(
-        PATHS.BESTIARY_MERGED,
-        JSON.stringify(bestiaryMerged, null, 2),
-        'utf-8',
-      );
-
-      const bestiaryCreatures = transformBestiary(bestiaryMerged);
-
-      // BRANCH: Animals
-      console.log('Step 2b: Processing Animals Branch...');
-      const animals = transformAnimals(normalizedText);
-      await fs.writeFile(
-        PATHS.ANIMALS_JSON,
-        JSON.stringify(animals, null, 2),
-        'utf-8',
-      );
-
-      // BRANCH: Everyday Mortals
-      console.log('Step 2c: Processing Everyday Mortals Branch...');
-      const mortalNamesAll = toc.appendices.everydayMortals.map((e) => e.name);
-      const mortals = transformMortals(normalizedText, mortalNamesAll);
-      await fs.writeFile(
-        PATHS.MORTALS_JSON,
-        JSON.stringify(mortals, null, 2),
-        'utf-8',
-      );
-
-      // BRANCH: Adventurers
-      console.log('Step 2d: Processing Adventurers Branch...');
-      const adventurerNamesAll = toc.appendices.adventurers.map((e) => e.name);
-      const adventurers = transformAdventurers(
-        normalizedText,
-        adventurerNamesAll,
-      );
-      await fs.writeFile(
-        PATHS.ADVENTURERS_JSON,
-        JSON.stringify(adventurers, null, 2),
-        'utf-8',
-      );
-
-      console.log(`Saved parsed TOC to: ${PATHS.TOC_JSON}`);
-
-      // Combine all creatures and assign factions
-      const allCreatures = assignFactions(
-        [...bestiaryCreatures, ...animals, ...mortals, ...adventurers],
-        normalizedText,
-      );
-      await fs.writeFile(
-        PATHS.INTERMEDIATE_JSON,
-        JSON.stringify(allCreatures, null, 2),
-        'utf-8',
-      );
-
-      // 3. Load
-      console.log('Step 3: Loading...');
+      // 2. Load (creatures.json -> YAML assets)
+      console.log('Step 2: Loading...');
       await loadCreatures();
 
-      // 4. Verify
+      // 3. Verify
       await validateReferences();
 
-      console.log('\n🎉 Pipeline Complete!');
+      console.log('\nPipeline Complete!');
     } catch (error) {
-      console.error('\n❌ Pipeline Failed:', error);
+      console.error('\nPipeline Failed:', error);
       process.exit(1);
     }
   });

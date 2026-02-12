@@ -9,16 +9,29 @@ import {
 } from '../schemas/encounter.js';
 import { TableEntry } from '../schemas/tables.js';
 import { Result, success, failure } from '../utils/Result.js';
+import { TreasureGenerator } from './TreasureGenerator.js';
+import { TreasureCodeParser } from './TreasureCodeParser.js';
+import type { RolledTreasure } from '../schemas/treasure.js';
 
 export type EncounterResult =
-  | { kind: 'creature'; creature: Creature; count: number; name: string }
+  | {
+      kind: 'creature';
+      creature: Creature;
+      count: number;
+      name: string;
+      treasure?: RolledTreasure;
+      possessions?: string;
+    }
   | { kind: 'text'; description: string; name: string };
 
 export class EncounterGenerator {
+  private readonly treasureParser = new TreasureCodeParser();
+
   constructor(
     private readonly tableRepository: TableRepository,
     private readonly creatureRepository: CreatureRepository,
     private readonly random: RandomProvider,
+    private readonly treasureGenerator?: TreasureGenerator,
   ) {}
 
   async generateEncounter(
@@ -44,6 +57,14 @@ export class EncounterGenerator {
       encounter.details.creature = data.creature;
       encounter.details.count = data.count;
       encounter.summary = `${data.count} x ${data.name}`;
+
+      // Treasure
+      if (data.treasure) {
+        encounter.details.treasure = data.treasure;
+      }
+      if (data.possessions) {
+        encounter.details.possessions = data.possessions;
+      }
 
       // 3. Roll Secondary Details
 
@@ -223,6 +244,43 @@ export class EncounterGenerator {
       creature,
       count,
       name: creature.name,
+      ...this.rollTreasure(creature),
     });
+  }
+
+  /**
+   * If a TreasureGenerator is available and the creature has a treasure field,
+   * parses the hoard code and rolls the treasure.
+   */
+  private rollTreasure(creature: Creature): {
+    treasure?: RolledTreasure;
+    possessions?: string;
+  } {
+    if (!this.treasureGenerator || !creature.treasure) {
+      return {};
+    }
+
+    const parseResult = this.treasureParser.parse(creature.treasure);
+    if (parseResult.kind === 'failure') {
+      return {};
+    }
+
+    const spec = parseResult.data;
+    if (spec === null) {
+      // "None" — no treasure
+      return {};
+    }
+
+    const result: { treasure?: RolledTreasure; possessions?: string } = {};
+
+    if (spec.codes.length > 0) {
+      result.treasure = this.treasureGenerator.rollHoard(spec);
+    }
+
+    if (spec.extras.length > 0) {
+      result.possessions = spec.extras.join('; ');
+    }
+
+    return result;
   }
 }
