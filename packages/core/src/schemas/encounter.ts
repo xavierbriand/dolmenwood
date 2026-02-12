@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { CreatureSchema } from './creature.js';
+import { RolledTreasureSchema } from './treasure.js';
 
 export const GenerationContextSchema = z.object({
   regionId: z.string(),
@@ -48,6 +49,8 @@ export const EncounterSchema = z.object({
     reaction: z.string().optional(),
     distance: z.string().optional(),
     surprise: z.string().optional(),
+    treasure: RolledTreasureSchema.optional(),
+    possessions: z.string().optional(),
   }),
 });
 

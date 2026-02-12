@@ -9,11 +9,13 @@ import {
   DefaultRandomProvider,
   SessionService,
   GenerationContext,
+  TreasureGenerator,
 } from '@dolmenwood/core';
 import {
   YamlTableRepository,
   YamlCreatureRepository,
   JsonSessionRepository,
+  JsonTreasureTableRepository,
 } from '@dolmenwood/data';
 import { createSessionCommand } from './commands/session.js';
 import { InteractiveService } from './services/InteractiveService.js';
@@ -23,6 +25,7 @@ const __dirname = path.dirname(__filename);
 
 // Resolve assets path relative to the built file (dist/index.js)
 const ASSETS_PATH = path.resolve(__dirname, '../../../assets');
+const TREASURE_TABLES_PATH = path.join(ASSETS_PATH, 'treasure-tables.json');
 const HOME = os.homedir();
 const SESSION_DIR = path.join(HOME, '.dolmenwood', 'sessions');
 
@@ -37,15 +40,32 @@ program
 const tableRepo = new YamlTableRepository(ASSETS_PATH);
 const creatureRepo = new YamlCreatureRepository(ASSETS_PATH);
 const sessionRepo = new JsonSessionRepository(SESSION_DIR);
+const treasureTableRepo = new JsonTreasureTableRepository(TREASURE_TABLES_PATH);
 
 const random = new DefaultRandomProvider();
-const generator = new EncounterGenerator(tableRepo, creatureRepo, random);
+
+/**
+ * Attempts to load treasure tables and create a TreasureGenerator.
+ * Returns undefined if treasure tables are unavailable.
+ */
+async function loadTreasureGenerator(): Promise<TreasureGenerator | undefined> {
+  const result = await treasureTableRepo.getTreasureTables();
+  if (result.kind === 'success') {
+    return new TreasureGenerator(result.data, random);
+  }
+  return undefined;
+}
+
 const sessionService = new SessionService(sessionRepo);
-const interactive = new InteractiveService(
-  generator,
-  sessionService,
-  tableRepo,
-);
+
+/**
+ * Creates the EncounterGenerator, optionally wiring in treasure generation
+ * if treasure tables are available.
+ */
+async function createGenerator(): Promise<EncounterGenerator> {
+  const treasureGen = await loadTreasureGenerator();
+  return new EncounterGenerator(tableRepo, creatureRepo, random, treasureGen);
+}
 
 // Register Commands
 program.addCommand(createSessionCommand(sessionService));
@@ -59,6 +79,8 @@ program
   .description('Generate a random encounter for a specific region context')
   .action(async (regionId, options) => {
     try {
+      const generator = await createGenerator();
+
       // 1. Load Session (if any)
       let session = null;
       const sessionRes = await sessionService.getLatestSession();
@@ -157,6 +179,48 @@ program
         }
       }
 
+      // Treasure
+      if (encounter.details.treasure) {
+        console.log('--------------------------------------------------');
+        console.log(chalk.bold.yellow('Treasure:'));
+        const t = encounter.details.treasure;
+        if (
+          t.coins.copper ||
+          t.coins.silver ||
+          t.coins.gold ||
+          t.coins.pellucidium
+        ) {
+          const coinParts: string[] = [];
+          if (t.coins.copper) coinParts.push(`${t.coins.copper} cp`);
+          if (t.coins.silver) coinParts.push(`${t.coins.silver} sp`);
+          if (t.coins.gold) coinParts.push(`${t.coins.gold} gp`);
+          if (t.coins.pellucidium) coinParts.push(`${t.coins.pellucidium} pp`);
+          console.log(`  ${chalk.dim('Coins:')} ${coinParts.join(', ')}`);
+        }
+        if (t.gems.length > 0) {
+          console.log(
+            `  ${chalk.dim('Gems:')} ${t.gems.map((g) => `${g.type} (${g.value}gp)`).join(', ')}`,
+          );
+        }
+        if (t.artObjects.length > 0) {
+          console.log(
+            `  ${chalk.dim('Art:')} ${t.artObjects.map((a) => `${a.material} ${a.type} (${a.value}gp)`).join(', ')}`,
+          );
+        }
+        if (t.magicItems.length > 0) {
+          console.log(
+            `  ${chalk.dim('Magic:')} ${t.magicItems.map((m) => m.name).join(', ')}`,
+          );
+        }
+        console.log(`  ${chalk.dim('Total Value:')} ${t.totalValue} gp`);
+      }
+
+      if (encounter.details.possessions) {
+        console.log(
+          `${chalk.bold('Possessions:')} ${encounter.details.possessions}`,
+        );
+      }
+
       console.log('==================================================');
 
       // 5. Save to Session
@@ -172,7 +236,14 @@ program
 
 // Handle Default Interactive Mode
 if (process.argv.length <= 2) {
-  interactive.start();
+  createGenerator().then((generator) => {
+    const interactive = new InteractiveService(
+      generator,
+      sessionService,
+      tableRepo,
+    );
+    interactive.start();
+  });
 } else {
   program.parse();
 }
