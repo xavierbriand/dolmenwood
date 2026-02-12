@@ -1,5 +1,15 @@
 import { z } from 'zod';
 
+export const DTableEntrySchema = z.object({
+  roll: z.string(),
+  text: z.string(),
+});
+
+export const AbilitySchema = z.object({
+  name: z.string(),
+  text: z.string(),
+});
+
 export const CreatureVariantSchema = z.object({
   label: z.string(), // e.g. "Level 3 Bard (Troubadour)"
   level: z.number().or(z.string()),
@@ -32,7 +42,16 @@ export const CreatureSchema = z.object({
   description: z.string().optional(),
   faction: z.array(z.string()).optional(),
   variants: z.array(CreatureVariantSchema).optional(),
+  // Enrichment fields (from Phase A1 Python extractor)
+  behaviour: z.string().optional(),
+  speech: z.string().optional(),
+  possessions: z.string().optional(),
+  creatureAbilities: z.array(AbilitySchema).optional(),
+  sections: z.record(z.string(), z.array(DTableEntrySchema)).optional(),
+  names: z.string().optional(),
 });
 
+export type DTableEntry = z.infer<typeof DTableEntrySchema>;
+export type Ability = z.infer<typeof AbilitySchema>;
 export type CreatureVariant = z.infer<typeof CreatureVariantSchema>;
 export type Creature = z.infer<typeof CreatureSchema>;

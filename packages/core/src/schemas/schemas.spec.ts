@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { CreatureSchema, EncounterTypeSchema } from './encounter.js';
 import { RegionTableSchema } from './tables.js';
+import { DTableEntrySchema, AbilitySchema } from './creature.js';
 
 describe('Encounter Schemas', () => {
   it('should validate a correct creature object', () => {
@@ -142,6 +143,136 @@ describe('Encounter Schemas', () => {
     if (result.success) {
       expect(result.data.variants).toBeUndefined();
     }
+  });
+});
+
+describe('DTableEntrySchema', () => {
+  it('should validate a d-table entry with roll and text', () => {
+    const entry = { roll: '1', text: 'Seductive, youthful beauty.' };
+    const result = DTableEntrySchema.safeParse(entry);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.roll).toBe('1');
+      expect(result.data.text).toBe('Seductive, youthful beauty.');
+    }
+  });
+
+  it('should validate a d-table entry with range roll', () => {
+    const entry = { roll: '1-2', text: 'Some outcome for a range.' };
+    const result = DTableEntrySchema.safeParse(entry);
+    expect(result.success).toBe(true);
+  });
+
+  it('should reject a d-table entry missing text', () => {
+    const entry = { roll: '3' };
+    const result = DTableEntrySchema.safeParse(entry);
+    expect(result.success).toBe(false);
+  });
+});
+
+describe('AbilitySchema', () => {
+  it('should validate an ability with name and text', () => {
+    const ability = {
+      name: 'Dark Sight',
+      text: 'Can see normally without light.',
+    };
+    const result = AbilitySchema.safeParse(ability);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.name).toBe('Dark Sight');
+      expect(result.data.text).toBe('Can see normally without light.');
+    }
+  });
+
+  it('should reject an ability missing name', () => {
+    const ability = { text: 'Some text' };
+    const result = AbilitySchema.safeParse(ability);
+    expect(result.success).toBe(false);
+  });
+});
+
+describe('Creature Schema (enrichment fields)', () => {
+  const baseCreature = {
+    name: 'Shadow Wraith',
+    level: 5,
+    alignment: 'Chaotic',
+    xp: 300,
+    numberAppearing: '1d4',
+    armourClass: 16,
+    movement: 40,
+    hitDice: '5d8',
+    attacks: ['1 x claw (1d8)'],
+    morale: 9,
+  };
+
+  it('should validate a creature with all enrichment fields', () => {
+    const enrichedCreature = {
+      ...baseCreature,
+      behaviour: 'Coldly brilliant, vengeful',
+      speech: 'Rasping whisper',
+      possessions: 'Tattered cloak, ancient ring',
+      treasure: 'C6 + R7',
+      creatureAbilities: [
+        { name: 'Incorporeal', text: 'Can pass through solid objects.' },
+        { name: 'Dark Sight', text: 'Can see without light.' },
+      ],
+      sections: {
+        TRAITS: [
+          { roll: '1', text: 'Flickering shadow form.' },
+          { roll: '2', text: 'Scent of cold earth.' },
+        ],
+        ENCOUNTERS: [
+          { roll: '1', text: 'Drifting silently through the mist.' },
+        ],
+      },
+      names: 'Aldric, Belthan, Caradoc, Darnoth',
+    };
+    const result = CreatureSchema.safeParse(enrichedCreature);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.behaviour).toBe('Coldly brilliant, vengeful');
+      expect(result.data.speech).toBe('Rasping whisper');
+      expect(result.data.possessions).toBe('Tattered cloak, ancient ring');
+      expect(result.data.creatureAbilities).toHaveLength(2);
+      expect(result.data.creatureAbilities![0].name).toBe('Incorporeal');
+      expect(result.data.sections).toBeDefined();
+      expect(result.data.sections!['TRAITS']).toHaveLength(2);
+      expect(result.data.sections!['ENCOUNTERS']).toHaveLength(1);
+      expect(result.data.names).toBe('Aldric, Belthan, Caradoc, Darnoth');
+    }
+  });
+
+  it('should validate a creature without enrichment fields (backward compat)', () => {
+    const result = CreatureSchema.safeParse(baseCreature);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.behaviour).toBeUndefined();
+      expect(result.data.speech).toBeUndefined();
+      expect(result.data.possessions).toBeUndefined();
+      expect(result.data.creatureAbilities).toBeUndefined();
+      expect(result.data.sections).toBeUndefined();
+      expect(result.data.names).toBeUndefined();
+    }
+  });
+
+  it('should reject creature with invalid sections shape', () => {
+    const badSections = {
+      ...baseCreature,
+      sections: {
+        TRAITS: 'not an array',
+      },
+    };
+    const result = CreatureSchema.safeParse(badSections);
+    expect(result.success).toBe(false);
+  });
+
+  it('should reject creature with invalid creatureAbilities shape', () => {
+    const badAbilities = {
+      ...baseCreature,
+      creatureAbilities: [{ name: 'Missing text field' }],
+    };
+    const result = CreatureSchema.safeParse(badAbilities);
+    expect(result.success).toBe(false);
   });
 });
 
