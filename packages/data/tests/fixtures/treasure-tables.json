@@ -1,0 +1,68 @@
+{
+  "coins": [
+    {
+      "type": "C1",
+      "averageValue": 25,
+      "copper": { "chance": 25, "quantity": "1d4 × 1,000" },
+      "silver": null,
+      "gold": null,
+      "pellucidium": null
+    }
+  ],
+  "riches": [
+    {
+      "type": "R1",
+      "averageValue": 250,
+      "gems": { "chance": 50, "quantity": "1d4 gems" },
+      "artObjects": null
+    }
+  ],
+  "magicItems": [
+    {
+      "type": "M1",
+      "averageValue": 670,
+      "chance": 10,
+      "items": "1 item (roll type)"
+    }
+  ],
+  "magicItemType": [{ "min": 1, "max": 100, "type": "Potion" }],
+  "treasureHoard": [
+    { "min": 1, "max": 100, "description": "Coins", "averageValue": 2500 }
+  ],
+  "jewellery": [{ "min": 1, "max": 100, "type": "Ring" }],
+  "miscArtObjects": [{ "min": 1, "max": 100, "type": "Vase" }],
+  "coinAppearance": [{ "roll": 1, "head": "Lord Test", "tail": "Acorn" }],
+  "gemValue": [{ "min": 1, "max": 100, "category": "Ornamental", "value": 10 }],
+  "gemType": {
+    "Ornamental": ["Agate", "Quartz"]
+  },
+  "preciousMaterials": [{ "roll": 1, "value": "Silver" }],
+  "embellishments": [{ "roll": 1, "value": "Engraved" }],
+  "provenance": [{ "roll": 1, "value": "Ancient" }],
+  "amulets": [
+    { "name": "Test Charm", "value": 500, "summary": "A test charm" }
+  ],
+  "magicBalms": [
+    { "name": "Test Balm", "value": 300, "summary": "A test balm" }
+  ],
+  "magicCrystals": [
+    { "name": "Test Crystal", "value": 400, "summary": "A test crystal" }
+  ],
+  "magicGarments": [
+    { "name": "Test Cloak", "value": 600, "summary": "A test cloak" }
+  ],
+  "magicRings": [
+    { "name": "Test Ring", "value": 700, "summary": "A test ring" }
+  ],
+  "potions": [
+    { "name": "Test Potion", "value": 200, "summary": "A test potion" }
+  ],
+  "wondrousItems": [
+    { "name": "Test Orb", "value": 900, "summary": "A test orb" }
+  ],
+  "magicArmour": {},
+  "magicInstruments": {},
+  "magicWeapons": {},
+  "rodsStavesWands": {},
+  "scrollsBooks": {}
+}
