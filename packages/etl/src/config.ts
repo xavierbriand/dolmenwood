@@ -66,6 +66,11 @@ export const PATHS = {
 
   // Load phase output (etl/output/load/)
   CREATURES_YAML: path.join(LOAD_DIR, 'creatures', 'creatures.yaml'),
+  TREASURE_TABLES_JSON: path.join(
+    LOAD_DIR,
+    'treasure-tables',
+    'treasure-tables.json',
+  ),
 
   // Assets (hand-authored encounter tables + symlinks to ETL outputs)
   ENCOUNTERS_DIR: ASSETS_DIR,

@@ -5,6 +5,7 @@
 # Assets: hand-authored data files contain copyrighted content
 /assets/*
 !/assets/creatures.yaml
+!/assets/treasure-tables.json
 
 # ETL directories: track folder structure, ignore all file contents
 /etl/input/*

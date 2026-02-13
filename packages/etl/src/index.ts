@@ -5,6 +5,7 @@ import path from 'node:path';
 import { PATHS } from './config.js';
 import { runExtraction } from './steps/extract.js';
 import { loadCreatures } from './steps/load.js';
+import { loadTreasureTables } from './steps/load-treasure.js';
 import { validateReferences } from './steps/validate-refs.js';
 import { transformV2 } from './steps/transform-v2.js';
 
@@ -96,6 +97,7 @@ program
     try {
       console.log('Step 2: Loading...');
       await loadCreatures();
+      await loadTreasureTables();
 
       // Auto-run validation after load
       await validateReferences();
@@ -138,9 +140,10 @@ program
       console.log('Step 1: Transforming via mapper pipeline...');
       await transformV2();
 
-      // 2. Load (creatures.json -> YAML assets)
+      // 2. Load (creatures.json -> YAML assets, treasure tables -> JSON)
       console.log('Step 2: Loading...');
       await loadCreatures();
+      await loadTreasureTables();
 
       // 3. Verify
       await validateReferences();
