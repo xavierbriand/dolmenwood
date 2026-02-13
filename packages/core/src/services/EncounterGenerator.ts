@@ -19,6 +19,7 @@ export type EncounterResult =
       creature: Creature;
       count: number;
       name: string;
+      isLair: boolean;
       treasure?: RolledTreasure;
       possessions?: string;
     }
@@ -56,6 +57,7 @@ export class EncounterGenerator {
       encounter.type = 'Creature';
       encounter.details.creature = data.creature;
       encounter.details.count = data.count;
+      encounter.details.isLair = data.isLair;
       encounter.summary = `${data.count} x ${data.name}`;
 
       // Treasure
@@ -208,6 +210,9 @@ export class EncounterGenerator {
     return ref;
   }
 
+  /** Base lair chance: 30% (can be overridden per-creature when data is available). */
+  private static readonly BASE_LAIR_CHANCE = 0.3;
+
   private async resolveCreature(
     entry: TableEntry,
   ): Promise<Result<EncounterResult>> {
@@ -224,7 +229,7 @@ export class EncounterGenerator {
 
     const creature = creatureResult.data;
 
-    // Determine number appearing
+    // Determine base number appearing
     const countExpression = entry.count || creature.numberAppearing;
     let count = 1;
     try {
@@ -239,20 +244,34 @@ export class EncounterGenerator {
       if (!isNaN(parsed)) count = parsed;
     }
 
+    // Determine lair status: roll percentile against base 30% chance
+    const isLair = this.random.next() < EncounterGenerator.BASE_LAIR_CHANCE;
+
+    // If lair, multiply count by 1d5 (up to 5× as many individuals)
+    if (isLair) {
+      const multiplier = Math.floor(this.random.next() * 5) + 1;
+      count = count * multiplier;
+    }
+
     return success({
       kind: 'creature',
       creature,
       count,
       name: creature.name,
-      ...this.rollTreasure(creature),
+      isLair,
+      ...this.rollTreasure(creature, isLair),
     });
   }
 
   /**
-   * If a TreasureGenerator is available and the creature has a treasure field,
-   * parses the hoard code and rolls the treasure.
+   * Rolls treasure based on lair status.
+   * - Wandering: possessions (extras) only, no hoard.
+   * - Lair: full hoard + possessions.
    */
-  private rollTreasure(creature: Creature): {
+  private rollTreasure(
+    creature: Creature,
+    isLair: boolean,
+  ): {
     treasure?: RolledTreasure;
     possessions?: string;
   } {
@@ -273,10 +292,12 @@ export class EncounterGenerator {
 
     const result: { treasure?: RolledTreasure; possessions?: string } = {};
 
-    if (spec.codes.length > 0) {
+    // Hoard treasure (C/R/M codes) only rolled for lair encounters
+    if (isLair && spec.codes.length > 0) {
       result.treasure = this.treasureGenerator.rollHoard(spec);
     }
 
+    // Possessions (extras) are available for both wandering and lair
     if (spec.extras.length > 0) {
       result.possessions = spec.extras.join('; ');
     }

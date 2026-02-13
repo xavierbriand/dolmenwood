@@ -216,6 +216,13 @@ export class InteractiveService {
     console.log(`${chalk.bold('Summary:')} ${chalk.white(encounter.summary)}`);
     console.log(`${chalk.bold('Type:')}    ${encounter.type}`);
 
+    if (encounter.details.isLair !== undefined) {
+      const lairLabel = encounter.details.isLair
+        ? chalk.bold.magenta('[In Lair]')
+        : chalk.dim('[Wandering]');
+      console.log(`${chalk.bold('Context:')} ${lairLabel}`);
+    }
+
     if (encounter.details.distance)
       console.log(`${chalk.bold('Distance:')} ${encounter.details.distance}`);
     if (encounter.details.surprise)

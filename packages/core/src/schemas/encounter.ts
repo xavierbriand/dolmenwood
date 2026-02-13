@@ -45,6 +45,7 @@ export const EncounterSchema = z.object({
   details: z.object({
     creature: CreatureSchema.optional(),
     count: z.number().optional(),
+    isLair: z.boolean().optional(),
     activity: z.string().optional(),
     reaction: z.string().optional(),
     distance: z.string().optional(),
