@@ -38,11 +38,11 @@ The Dolmenwood Monster Book (DMB) is a proprietary PDF. Creature statistics must
 
 A dedicated `@dolmenwood/etl` package with a CLI tool orchestrating a multi-branch pipeline:
 
-1. **Extract**: `tmp/etl/DMB.pdf` -> `tmp/etl/dmb-raw.txt` (via `pdf-parse`)
-2. **Transform**: `tmp/etl/dmb-raw.txt` -> `tmp/etl/creatures-intermediate.json` (via 4 parallel pipeline branches + faction assignment)
-3. **Load**: `tmp/etl/creatures-intermediate.json` -> `assets/creatures.yaml` (via Zod validation + YAML serialization)
+1. **Extract**: `etl/input/DMB.pdf` -> `etl/output/extract/dmb-raw.txt` (via `pdf-parse`)
+2. **Transform**: `etl/output/extract/dmb-raw.txt` -> `etl/output/transform/creatures-intermediate.json` (via 4 parallel pipeline branches + faction assignment)
+3. **Load**: `etl/output/transform/creatures-intermediate.json` -> `etl/output/load/creatures/creatures.yaml` (via Zod validation + YAML serialization)
 
-All intermediate files and the source PDF reside in a git-ignored `tmp/etl/` directory.
+All intermediate files reside in the gitignored `etl/output/` directory. Source PDFs go in `etl/input/`. The final output is symlinked from `assets/creatures.yaml` to `etl/output/load/creatures/creatures.yaml`.
 
 ## Architecture
 
@@ -136,8 +136,8 @@ Load (validate via CreatureSchema -> write assets/creatures.yaml)
 | `transform`     | Raw text -> intermediate JSON (runs all 4 branches + factions) |
 | `load`          | Validate JSON -> write YAML                                    |
 | `verify`        | Cross-reference encounter tables vs creature data              |
-| `all [--clean]` | Run full pipeline (optionally clean tmp/ first)                |
-| `clean`         | Remove tmp/etl/ directory                                      |
+| `all [--clean]` | Run full pipeline (optionally clean output first)              |
+| `clean`         | Remove etl/output/ contents (preserving .gitkeep files)        |
 
 ### Creature Schema
 
@@ -151,8 +151,9 @@ The variant model stores L1 as the base creature and L3/L5 as full-snapshot vari
 
 ### IP Protection
 
-- `tmp/` and `assets/` are git-ignored
-- A pre-commit hook (`scripts/ip-check.ts`) scans staged files for 40+ character passages from the source PDF
+- Source PDFs and ETL outputs are gitignored via `etl/input/*` and `etl/output/**/*` rules (with `.gitkeep` exceptions)
+- `assets/` contains only symlinks to ETL load outputs (e.g., `creatures.yaml -> ../etl/output/load/creatures/creatures.yaml`) and hand-authored data files; all IP-containing files are gitignored via `/assets/*` with explicit exceptions for tracked symlinks
+- A pre-commit hook (`scripts/ip-check.ts`) scans staged files for 40+ character passages from the source PDFs (extracted text in `etl/output/extract/`)
 - Integration tests use `skipIf(!hasSourceData)` guards
 - Unit tests use generic/synthetic data per AGENTS.md guidelines
 

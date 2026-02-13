@@ -44,7 +44,7 @@ A Node.js/TypeScript core library handling nested probability tables and dice lo
 **Out of Scope:**
 
 - Web UI (future phase).
-- Adventuring party generation procedure (see `plan-adventuring-party-generation.md`).
+- NPC party generation procedure (see `plan-adventuring-party-generation.md`).
 
 ## Architecture
 
@@ -73,14 +73,16 @@ A Node.js/TypeScript core library handling nested probability tables and dice lo
 
 ### Data Files (assets/)
 
-| File                       | Description                                                 |
-| -------------------------- | ----------------------------------------------------------- |
-| `creatures.yaml`           | 149 creatures with stats, variants, factions                |
-| `encounter-types.yaml`     | 4 encounter type tables (Day/Night x Road/Wild/Fire/NoFire) |
-| `common-encounters.yaml`   | Common sub-tables (Animal, Monster, Mortal, Sentient)       |
-| `regional-encounters.yaml` | Region-specific encounter tables                            |
-| `activity.yaml`            | Activity table (1d20)                                       |
-| `reaction.yaml`            | Reaction table (2d6)                                        |
+The `assets/` directory contains symlinks to ETL-generated outputs and hand-authored data files. ETL-generated files (e.g., `creatures.yaml`) are symlinks to `etl/output/load/` and are gitignored via the `/assets/*` rule with explicit exceptions. Hand-authored IP-containing files (encounter tables, etc.) are also gitignored.
+
+| File                       | Type    | Description                                                                  |
+| -------------------------- | ------- | ---------------------------------------------------------------------------- |
+| `creatures.yaml`           | Symlink | 149 creatures with stats, variants, factions (-> etl/output/load/creatures/) |
+| `encounter-types.yaml`     | Local   | 4 encounter type tables (Day/Night x Road/Wild/Fire/NoFire)                  |
+| `common-encounters.yaml`   | Local   | Common sub-tables (Animal, Monster, Mortal, Sentient)                        |
+| `regional-encounters.yaml` | Local   | Region-specific encounter tables                                             |
+| `activity.yaml`            | Local   | Activity table (1d20)                                                        |
+| `reaction.yaml`            | Local   | Reaction table (2d6)                                                         |
 
 ### Generation Flow
 

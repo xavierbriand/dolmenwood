@@ -3,7 +3,15 @@ project_name: 'dolmenwood-encounters'
 user_name: 'Xavier'
 date: 'Sun Feb 08 2026'
 sections_completed:
-  ['technology_stack', 'language_rules', 'framework_rules', 'testing_rules', 'quality_rules', 'workflow_rules', 'anti_patterns']
+  [
+    'technology_stack',
+    'language_rules',
+    'framework_rules',
+    'testing_rules',
+    'quality_rules',
+    'workflow_rules',
+    'anti_patterns',
+  ]
 status: 'complete'
 rule_count: 52
 optimized_for_llm: true
@@ -35,6 +43,18 @@ _This file contains critical rules and patterns that AI agents must follow when 
   - **MANDATORY:** Use `.js` extension for ALL relative imports (e.g., `import { x } from './file.js'`).
   - **Missing Globals:** `__dirname`/`__filename` do NOT exist. Use `import.meta.url` with `fileURLToPath` instead.
   - **JSON:** Use `createRequire(import.meta.url)` to load JSON files, not `import`.
+
+### Directory Organization
+
+- **`etl/`** — Structured ETL directory at project root:
+  - `etl/input/` — Source PDFs (DMB.pdf, DCB.pdf, DPB.pdf). Gitignored contents, tracked `.gitkeep`.
+  - `etl/output/extract/` — Python JSON + raw text extraction output. Gitignored contents.
+  - `etl/output/transform/` — Intermediate transform output. Gitignored contents.
+  - `etl/output/load/creatures/` — Final `creatures.yaml`. Gitignored contents.
+  - `etl/output/load/treasure-tables/` — Final `treasure-tables.json`. Gitignored contents.
+- **`assets/`** — Contains symlinks to ETL load outputs (e.g., `creatures.yaml -> ../etl/output/load/creatures/creatures.yaml`). Hand-authored data files containing IP are gitignored. Only symlinks are tracked.
+- **`_bmad-output/`** — Plans, specs, and project context (gitignored).
+- **`rules/`** — OCR'd reference material (gitignored).
 
 - **TypeScript 5.x Configuration:**
   - **Type Imports:** Use `import type` explicitly (enforce `verbatimModuleSyntax: true`).

@@ -23,7 +23,7 @@ Three remaining gaps in the ETL pipeline prevent end-to-end operation:
 
 **1. `extract` command** — The ETL CLI (`packages/etl/src/index.ts`) has `transform`, `load`, `verify`, and `all` commands, but no `extract` command to invoke the Python scripts. Users must manually run `python3 extract_dmb.py` and `python3 extract_dcb_treasure.py` before running the TypeScript pipeline.
 
-**2. Treasure table loading** — The Python extractor produces `tmp/etl/dcb-treasure-tables.json`, but there is no step to copy or load it into `assets/treasure-tables.json`. The CLI (`packages/cli/src/index.ts`) looks for `assets/treasure-tables.json` via `JsonTreasureTableRepository` and silently degrades to no-op when missing.
+**2. Treasure table loading** — The Python extractor produces `etl/output/extract/dcb-treasure-tables.json`, but there is no step to validate and load it into `etl/output/load/treasure-tables/treasure-tables.json` (symlinked from `assets/treasure-tables.json`). The CLI (`packages/cli/src/index.ts`) looks for `assets/treasure-tables.json` via `JsonTreasureTableRepository` and silently degrades to no-op when missing.
 
 **3. Lair vs Wandering treasure** — Per the encounter rules (DMB §3: "Roll possessions for wandering encounters and hoard for lair encounters"), the current `EncounterGenerator` always rolls the full hoard regardless of encounter context. It should roll only possessions for wandering encounters and the full hoard for lair encounters.
 
@@ -41,7 +41,7 @@ A new step module that:
 2. Checks that the source PDFs exist at expected paths (configurable, documented in README).
 3. Runs `extract_dmb.py` via `execFileSync('python3', [scriptPath], { cwd, stdio: 'inherit' })`.
 4. Runs `extract_dcb_treasure.py` similarly.
-5. Verifies that all expected output files exist in `tmp/etl/` after extraction.
+5. Verifies that all expected output files exist in `etl/output/extract/` after extraction.
 6. Returns a summary: number of files produced, total size.
 
 **Config additions** (`packages/etl/src/config.ts`):
@@ -52,8 +52,8 @@ PY_EXTRACT_DMB: path.join(PROJECT_ROOT, 'packages/etl/scripts/extract_dmb.py'),
 PY_EXTRACT_DCB_TREASURE: path.join(PROJECT_ROOT, 'packages/etl/scripts/extract_dcb_treasure.py'),
 
 // Source PDFs (expected locations)
-DMB_PDF: path.join(PROJECT_ROOT, 'tmp/DMB.pdf'),
-DCB_PDF: path.join(PROJECT_ROOT, 'tmp/DCB.pdf'),
+DMB_PDF: path.join(PROJECT_ROOT, 'etl/input/DMB.pdf'),
+DCB_PDF: path.join(PROJECT_ROOT, 'etl/input/DCB.pdf'),
 ```
 
 **CLI wiring** (`packages/etl/src/index.ts`):
@@ -97,7 +97,7 @@ await runExtraction();
 
 ## Phase 2: Treasure Table Loading
 
-Add a load step that copies the extracted treasure JSON into `assets/` where the CLI can find it.
+Add a load step that validates the extracted treasure JSON and writes it to `etl/output/load/treasure-tables/` where it is symlinked from `assets/`.
 
 **File:** `packages/etl/src/steps/load-treasure.ts`
 
@@ -113,7 +113,7 @@ export async function loadTreasureTables(): Promise<void> {
     throw new Error('Treasure table validation failed');
   }
 
-  // Write validated data to assets
+  // Write validated data to ETL load output (symlinked from assets/)
   await fs.writeFile(
     PATHS.TREASURE_TABLES_JSON,
     JSON.stringify(result.data, null, 2),
@@ -125,7 +125,7 @@ export async function loadTreasureTables(): Promise<void> {
 **Config addition:**
 
 ```typescript
-TREASURE_TABLES_JSON: path.join(ASSETS_DIR, 'treasure-tables.json'),
+TREASURE_TABLES_JSON: path.join(LOAD_DIR, 'treasure-tables', 'treasure-tables.json'),
 ```
 
 **CLI wiring:** The `load` command and `all` command call `loadTreasureTables()` after `loadCreatures()`:
@@ -143,7 +143,7 @@ await loadTreasureTables();
 await validateReferences();
 ```
 
-**Gitignore:** `assets/treasure-tables.json` must be added to `.gitignore` alongside the existing `assets/creatures.yaml` exclusion (if applicable), since it is generated from copyrighted source material. Alternatively, if `assets/` is already tracked, only `creatures.yaml` and `treasure-tables.json` should be excluded as generated outputs.
+**Symlink:** Create `assets/treasure-tables.json` as a symlink to `../etl/output/load/treasure-tables/treasure-tables.json` (following the same pattern as `assets/creatures.yaml`). The `etl/output/load/treasure-tables/` directory contents are gitignored; the symlink in `assets/` is tracked. No additional `.gitignore` changes needed — `assets/` is already configured to track only symlinks to ETL outputs.
 
 ### Tests
 
@@ -279,5 +279,5 @@ Phase 3 (lair/wandering) ─── independent of Phases 1-2 (domain logic only)
 ## Resolved Questions
 
 1. **FactionParser cleanup** — ✅ Already resolved. Faction assignment is inline in `transform-v2.ts`. The stale LSP references to deleted files (`extract.ts`, `transform.ts`) are phantom errors from the editor index. Build passes cleanly.
-2. **PDF paths** — ✅ Configurable via `PATHS` constants. Users place PDFs in `tmp/` (gitignored).
+2. **PDF paths** — ✅ Configurable via `PATHS` constants. Users place PDFs in `etl/input/` (gitignored).
 3. **Possessions vs Hoard** — ✅ Addressed in Phase 3. Wandering = possessions only, lair = full hoard. Base 30% lair chance with creature-specific override when available.
