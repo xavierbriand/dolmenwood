@@ -2,7 +2,7 @@
 title: 'ETL Pipeline Completion'
 slug: 'etl-pipeline-completion'
 created: '2026-02-13'
-status: 'draft'
+status: 'complete'
 tech_stack:
   - Python (PyMuPDF/fitz)
   - TypeScript
@@ -275,6 +275,14 @@ Phase 3 (lair/wandering) ─── independent of Phases 1-2 (domain logic only)
 - **Phase 1:** Mocked child process tests (no real PDFs needed). Optionally, a manual integration test that runs against real PDFs (not in CI).
 - **Phase 2:** Synthetic JSON fixture → Zod validation → file output. Fast, no external deps.
 - **Phase 3:** Seeded `RandomProvider` tests in `EncounterGenerator.spec.ts`. Deterministic lair/wandering outcomes based on fixed random sequences.
+
+## Completion Status
+
+All three phases are implemented and passing (314 tests, build clean, lint clean):
+
+- **Phase 1** (extract command): Committed in `df4176b`.
+- **Phase 2** (treasure table loading): Committed in `e087595`.
+- **Phase 3** (lair vs wandering treasure): Committed in `fd58f97`.
 
 ## Resolved Questions
 
