@@ -1,149 +1,175 @@
 # Dolmenwood Encounter Generator
 
-A CLI tool for generating random encounters for the Dolmenwood RPG setting. This project uses a **Hexagonal Architecture** within a TypeScript Monorepo.
+A CLI tool for generating random encounters for the [Dolmenwood](https://necroticgnome.com/collections/dolmenwood) TTRPG setting by Necrotic Gnome. Built with a **Hexagonal Architecture** in a TypeScript monorepo.
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
-- **Node.js**: v20 or higher
-- **pnpm**: Package manager (`npm install -g pnpm`)
+- **Node.js** v20+
+- **pnpm** (`npm install -g pnpm`)
+- **Python 3** with [PyMuPDF](https://pymupdf.readthedocs.io/) (`pip install pymupdf`) -- for ETL only
 
 ### Installation
 
-1.  Clone the repository:
-
-    ```bash
-    git clone https://github.com/xavierbriand/dolmenwood.git
-    cd dolmenwood
-    ```
-
-2.  Install dependencies:
-
-    ```bash
-    pnpm install
-    ```
-
-3.  Build the project:
-    ```bash
-    pnpm build
-    ```
-
-## ⚙️ Configuration (Assets)
-
-Because the encounter tables and creature statistics are proprietary content of Dolmenwood, they are **not included** in this repository. You must provide them manually.
-
-1.  Create an `assets` folder in the root directory:
-
-    ```bash
-    mkdir assets
-    ```
-
-2.  Populate it with YAML files. You can split data across multiple files (e.g., `creatures.yaml`, `common-tables.yaml`, `regional-tables.yaml`). The system loads all `.yaml` files in the directory.
-
-### File Formats
-
-**Creature Data** (e.g., `assets/creatures.yaml`)
-
-```yaml
-- name: Forest Sprite
-  level: 1
-  alignment: Neutral
-  xp: 15
-  numberAppearing: 1d6
-  armourClass: 12
-  movement: 40
-  hitDice: 1d8
-  attacks:
-    - Weapon (+0)
-  morale: 7
-  treasure: 2d4gp
-  description: A small magical creature of the woods.
+```bash
+git clone https://github.com/xavierbriand/dolmenwood.git
+cd dolmenwood
+pnpm install
+pnpm build
 ```
 
-**Table Data** (e.g., `assets/regions.yaml`)
+## Importing Data (ETL)
 
-```yaml
-# Root regional tables usually follow the naming convention:
-# "Encounter Type - {Time} - {Terrain/Condition}"
-# e.g., "Encounter Type - Daytime - Wild"
+The encounter tables and creature data are proprietary content and **not included** in this repository. If you own the Dolmenwood source books (PDFs), the ETL pipeline can extract and transform the data automatically.
 
-- name: Encounter Type - Daytime - Wild
-  die: 1d8
-  entries:
-    - min: 1
-      max: 1
-      type: Animal
-      ref: Common - Animal # References a generic table
-    - min: 2
-      max: 2
-      type: Regional
-      ref: Regional # Will look for "Regional - {Region Name}"
-
-- name: Common - Animal
-  die: 1d20
-  entries:
-    - min: 1
-      max: 20
-      type: Creature
-      ref: Forest Sprite # References a name in creatures.yaml
-      count: 1d10
-```
-
-### 📚 Importing Data (ETL)
-
-If you own the **Dolmenwood Monster Book (PDF)**, you can use the automated ETL pipeline to extract creature data.
-
-1.  Place your `DMB.pdf` file in a `tmp/etl/` directory at the project root:
-
-    ```bash
-    mkdir -p tmp/etl
-    cp /path/to/DMB.pdf tmp/etl/DMB.pdf
-    ```
-
-2.  Run the pipeline:
-
-    ```bash
-    pnpm --filter @dolmenwood/etl start all --clean
-    ```
-
-3.  The pipeline will:
-    - Extract text from the PDF.
-    - Parse creature statistics (Armor Class, Hit Dice, Attacks, etc.).
-    - Validate the data against the schema.
-    - Output a ready-to-use `assets/creatures.yaml` file.
-
-## 🎮 Usage
-
-Run the CLI using `pnpm`:
+### Step 1: Place PDFs
 
 ```bash
-# Syntax
-pnpm --filter @dolmenwood/cli start -- encounter <region_id> [options]
+mkdir -p tmp/etl
+cp /path/to/DMB.pdf tmp/etl/DMB.pdf   # Dolmenwood Monster Book
+cp /path/to/DCB.pdf tmp/etl/DCB.pdf   # Dolmenwood Campaign Book
+```
 
-# Options:
-#   -t, --time <time>       Time of day: "Day" or "Night" (default: "Day")
-#   --terrain <terrain>     Terrain: "Road" or "Off-road" (default: "Off-road")
-#   -c, --camping           Is the party camping? (flag)
+### Step 2: Run the Python extractors
 
-# Example: Generate an encounter for High Wold, at Night, on a Road
-pnpm --filter @dolmenwood/cli start -- encounter "high-wold" --time Night --terrain Road
+These use PyMuPDF for font-aware PDF parsing:
+
+```bash
+# Extract creature data from the Monster Book
+python3 packages/etl/scripts/extract_dmb.py
+
+# Extract treasure tables from the Campaign Book
+python3 packages/etl/scripts/extract_dcb_treasure.py
+
+# Extract raw text for IP compliance checking
+python3 packages/etl/scripts/extract_raw_text.py
+```
+
+### Step 3: Run the TypeScript pipeline
+
+```bash
+pnpm --filter @dolmenwood/etl start all
+```
+
+This transforms the extracted JSON into validated YAML assets:
+
+1. **Transform** -- maps raw JSON into domain `Creature[]` objects
+2. **Load** -- validates against Zod schemas, writes `assets/creatures.yaml`
+3. **Verify** -- cross-references creatures against encounter tables
+
+### ETL Commands
+
+| Command         | Description                                    |
+| --------------- | ---------------------------------------------- |
+| `extract-text`  | Extract raw text from PDFs (for IP compliance) |
+| `transform`     | Transform Python JSON into `creatures.json`    |
+| `load`          | Validate and write `assets/creatures.yaml`     |
+| `verify`        | Check encounter table references               |
+| `all [--clean]` | Run transform + load + verify                  |
+| `clean`         | Remove intermediate files in `tmp/etl/`        |
+
+Run any command with: `pnpm --filter @dolmenwood/etl start <command>`
+
+## Usage
+
+### Interactive Mode
+
+Run the CLI with no arguments for an interactive menu:
+
+```bash
+pnpm start
+```
+
+This prompts you to select a region, time of day, terrain, and camping status, then generates a full encounter with creature stats.
+
+### Command-Line Mode
+
+```bash
+pnpm start -- encounter <region_id> [options]
+```
+
+**Options:**
+
+| Flag                  | Description                   | Default    |
+| --------------------- | ----------------------------- | ---------- |
+| `-t, --time <time>`   | Time of day: `Day` or `Night` | `Day`      |
+| `--terrain <terrain>` | Terrain: `Road` or `Off-road` | `Off-road` |
+| `-c, --camping`       | Party is camping              | `false`    |
+
+**Example:**
+
+```bash
+pnpm start -- encounter "high-wold" --time Night --terrain Road
+```
+
+### Session Management
+
+```bash
+pnpm start -- session new      # Start a new session
+pnpm start -- session list     # List all sessions
+pnpm start -- session info     # Show latest session details
 ```
 
 ### Features
 
-- **Context-Aware Generation**: Takes region, time, terrain, and camping status into account to select the correct tables.
-- **Recursive Lookups**: Automatically resolves generic references (e.g., `Common - Animal`) to localized versions (e.g., `Common - Animal - High Wold`) if they exist.
-- **Full Stat Blocks**: Outputs complete B/X stats for generated creatures.
+- **Context-aware generation** -- region, time, terrain, and camping status select the correct encounter tables
+- **Recursive table resolution** -- generic references (e.g., `Common - Animal`) resolve to localized versions (e.g., `Common - Animal - High Wold`) when available
+- **Treasure generation** -- treasure codes on creatures are parsed and rolled into concrete loot
+- **Full stat blocks** -- complete B/X-style stats for generated creatures
 
-## 🛠️ Development
+## Development
 
-- **Build:** `pnpm build`
-- **Test:** `pnpm test`
-- **Lint:** `pnpm lint`
+```bash
+pnpm build    # Build all packages
+pnpm test     # Run all tests (284 across 4 packages + scripts)
+pnpm lint     # Lint all packages
+```
 
 ### Architecture
 
-- **`packages/core`**: Pure domain logic, entities, and port interfaces.
-- **`packages/data`**: Adapters for loading data (YAML).
-- **`packages/cli`**: The command-line interface adapter.
+```
+CLI (driving) --> Data (driven) --> Core (domain)
+```
+
+| Package            | Role                                         | Key Dependencies                 |
+| ------------------ | -------------------------------------------- | -------------------------------- |
+| `@dolmenwood/core` | Pure domain logic, entities, port interfaces | `zod`, `ts-pattern`              |
+| `@dolmenwood/data` | Adapters for YAML/JSON data loading          | `js-yaml`, `zod`                 |
+| `@dolmenwood/cli`  | Command-line interface, dependency injection | `commander`, `inquirer`, `chalk` |
+| `@dolmenwood/etl`  | PDF extraction and data transformation       | `commander`, `js-yaml`, `zod`    |
+
+**Dependency rule:** Core knows nothing of the outer layers. Data implements port interfaces defined in Core. CLI wires everything together.
+
+### Asset Files
+
+The `assets/` directory (gitignored) contains the runtime data:
+
+| File                       | Content                                         |
+| -------------------------- | ----------------------------------------------- |
+| `creatures.yaml`           | Creature stat blocks (generated by ETL)         |
+| `encounter-types.yaml`     | Encounter type resolution tables (time/terrain) |
+| `common-encounters.yaml`   | Common/shared encounter tables                  |
+| `regional-encounters.yaml` | Region-specific encounter tables                |
+| `activity.yaml`            | Creature activity tables                        |
+| `reaction.yaml`            | NPC reaction tables                             |
+
+### IP Compliance
+
+A pre-commit hook scans staged files for verbatim passages (40+ characters) from the Dolmenwood source books. This prevents copyrighted content from leaking into the public repository.
+
+- Runs automatically on every commit via Husky
+- Scans against `tmp/etl/*-raw.txt` (generate with `extract_raw_text.py`)
+- Skips gracefully if raw text files are not available (e.g., in CI)
+- Full scan: `pnpm tsx scripts/ip-check.ts --all`
+- `packages/etl/` is exempt (it inherently processes source material)
+
+### CI
+
+GitHub Actions runs on every push to `main` and every PR:
+
+1. `pnpm install`
+2. `pnpm audit --prod`
+3. `pnpm build`
+4. `pnpm lint`
+5. `pnpm test`
