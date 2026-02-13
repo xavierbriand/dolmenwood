@@ -26,6 +26,22 @@ export const PATHS = {
     'extract_raw_text.py',
   ),
 
+  // Python extraction scripts
+  PY_EXTRACT_DMB: path.join(
+    PROJECT_ROOT,
+    'packages',
+    'etl',
+    'scripts',
+    'extract_dmb.py',
+  ),
+  PY_EXTRACT_DCB_TREASURE: path.join(
+    PROJECT_ROOT,
+    'packages',
+    'etl',
+    'scripts',
+    'extract_dcb_treasure.py',
+  ),
+
   // Pipeline output (consumed by load step)
   INTERMEDIATE_JSON: path.join(TMP_DIR, 'creatures.json'),
 

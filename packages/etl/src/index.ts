@@ -2,6 +2,7 @@ import { Command } from 'commander';
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs/promises';
 import { PATHS } from './config.js';
+import { runExtraction } from './steps/extract.js';
 import { loadCreatures } from './steps/load.js';
 import { validateReferences } from './steps/validate-refs.js';
 import { transformV2 } from './steps/transform-v2.js';
@@ -41,6 +42,22 @@ program
       });
     } catch (error) {
       console.error('Text extraction failed:', error);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('extract')
+  .description('Run Python extractors on source PDFs')
+  .action(async () => {
+    try {
+      console.log('Step 0: Extracting from PDFs...');
+      const result = runExtraction();
+      console.log(
+        `Extraction complete: ${result.fileCount} files, ${(result.totalBytes / 1024).toFixed(0)} KB total.`,
+      );
+    } catch (error) {
+      console.error('Extraction failed:', error);
       process.exit(1);
     }
   });
@@ -86,12 +103,24 @@ program
 
 program
   .command('all')
-  .description('Run full ETL pipeline (assumes Python extractor has been run)')
+  .description('Run full ETL pipeline (extract → transform → load → verify)')
   .option('-c, --clean', 'Clean temporary files before starting')
+  .option('--skip-extract', 'Skip Python extraction (assume already run)')
   .action(async (options) => {
     try {
       if (options.clean) {
         await cleanTmp();
+      }
+
+      // 0. Extract (Python scripts)
+      if (!options.skipExtract) {
+        console.log('Step 0: Extracting from PDFs...');
+        const result = runExtraction();
+        console.log(
+          `Extraction complete: ${result.fileCount} files, ${(result.totalBytes / 1024).toFixed(0)} KB total.`,
+        );
+      } else {
+        console.log('Step 0: Skipping extraction (--skip-extract).');
       }
 
       // 1. Transform (Python JSON -> creatures.json)
