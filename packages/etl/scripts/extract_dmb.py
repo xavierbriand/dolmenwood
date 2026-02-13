@@ -3,10 +3,10 @@
 Extract structured creature data from the Dolmenwood Monster Book (DMB) PDF.
 
 Uses PyMuPDF (fitz) for font-aware extraction. Produces JSON files:
-  - tmp/etl/dmb-bestiary.json   (87 bestiary creatures with enrichment fields)
-  - tmp/etl/dmb-animals.json    (53 animals - compact stat blocks)
-  - tmp/etl/dmb-mortals.json    (9 everyday mortals - compact stat blocks)
-  - tmp/etl/dmb-adventurers.json (9 adventurers - compact stat blocks with variants)
+  - etl/output/extract/dmb-bestiary.json   (87 bestiary creatures with enrichment fields)
+  - etl/output/extract/dmb-animals.json    (53 animals - compact stat blocks)
+  - etl/output/extract/dmb-mortals.json    (9 everyday mortals - compact stat blocks)
+  - etl/output/extract/dmb-adventurers.json (9 adventurers - compact stat blocks with variants)
 
 Font detection strategy:
   - Creature name (bestiary): Winona @ ~35.7pt
@@ -1239,12 +1239,12 @@ def extract_factions(doc: fitz.Document) -> dict[str, list[str]]:
 
 def main():
     if len(sys.argv) < 2:
-        pdf_path = "tmp/etl/DMB.pdf"
+        pdf_path = "etl/input/DMB.pdf"
     else:
         pdf_path = sys.argv[1]
     
     if len(sys.argv) < 3:
-        output_dir = "tmp/etl"
+        output_dir = "etl/output/extract"
     else:
         output_dir = sys.argv[2]
     

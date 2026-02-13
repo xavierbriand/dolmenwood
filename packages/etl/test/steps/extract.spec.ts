@@ -73,7 +73,7 @@ describe('runExtraction', () => {
       expect(deps.execScript).toHaveBeenCalledWith('python3', [
         PATHS.PY_EXTRACT_DMB,
         PATHS.DMB_PDF,
-        PATHS.TMP_DIR,
+        PATHS.EXTRACT_DIR,
       ]);
     });
 
@@ -85,7 +85,7 @@ describe('runExtraction', () => {
       expect(deps.execScript).toHaveBeenCalledWith('python3', [
         PATHS.PY_EXTRACT_DCB_TREASURE,
         PATHS.DCB_PDF,
-        PATHS.TMP_DIR,
+        PATHS.EXTRACT_DIR,
       ]);
     });
 

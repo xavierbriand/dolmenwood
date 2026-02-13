@@ -3,7 +3,7 @@
 Extract structured treasure table data from the Dolmenwood Campaign Book (DCB) PDF.
 
 Uses PyMuPDF (fitz) for font-aware extraction. Produces:
-  - tmp/etl/dcb-treasure-tables.json
+  - etl/output/extract/dcb-treasure-tables.json
 
 The JSON contains all tables from Part Seven: Treasures and Oddments (p392-434):
   - coins: C1-C12 hoard tables
@@ -1416,12 +1416,12 @@ def extract_treasure_hoard_table(doc: fitz.Document) -> list[dict]:
 
 def main():
     if len(sys.argv) < 2:
-        pdf_path = "tmp/etl/DCB.pdf"
+        pdf_path = "etl/input/DCB.pdf"
     else:
         pdf_path = sys.argv[1]
 
     if len(sys.argv) < 3:
-        output_dir = "tmp/etl"
+        output_dir = "etl/output/extract"
     else:
         output_dir = sys.argv[2]
 

@@ -97,7 +97,7 @@ This is **not** about individual words. Creature names like "Mossling" or "Bear"
 
 ### Automated enforcement
 
-A pre-commit hook (`scripts/ip-check.ts`) scans source files for passages reproduced from the source PDF (`tmp/etl/dmb-raw.txt`). Any 40+ character chunk found verbatim will block the commit. The check skips gracefully if the PDF text is not available locally (e.g., in CI).
+A pre-commit hook (`scripts/ip-check.ts`) scans source files for passages reproduced from the source PDFs (extracted text in `etl/output/extract/`). Any 40+ character chunk found verbatim will block the commit. The check skips gracefully if the extracted text is not available locally (e.g., in CI).
 
 ## 4. Project Architecture
 

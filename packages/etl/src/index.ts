@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs/promises';
+import path from 'node:path';
 import { PATHS } from './config.js';
 import { runExtraction } from './steps/extract.js';
 import { loadCreatures } from './steps/load.js';
@@ -14,11 +15,17 @@ program
   .description('ETL pipeline for Dolmenwood Monster Book')
   .version('0.0.1');
 
-async function cleanTmp() {
-  console.log('Cleaning temporary files...');
+async function cleanOutput() {
+  console.log('Cleaning ETL output files...');
   try {
-    await fs.rm(PATHS.TMP_DIR, { recursive: true, force: true });
-    console.log('Cleaned tmp/etl/');
+    await fs.rm(PATHS.OUTPUT_DIR, { recursive: true, force: true });
+    await fs.mkdir(PATHS.EXTRACT_DIR, { recursive: true });
+    await fs.mkdir(PATHS.TRANSFORM_DIR, { recursive: true });
+    await fs.mkdir(path.join(PATHS.LOAD_DIR, 'creatures'), { recursive: true });
+    await fs.mkdir(path.join(PATHS.LOAD_DIR, 'treasure-tables'), {
+      recursive: true,
+    });
+    console.log('Cleaned etl/output/');
   } catch (error) {
     console.error('Failed to clean:', error);
   }
@@ -26,9 +33,9 @@ async function cleanTmp() {
 
 program
   .command('clean')
-  .description('Remove intermediate files in tmp/etl')
+  .description('Remove ETL output files')
   .action(async () => {
-    await cleanTmp();
+    await cleanOutput();
   });
 
 program
@@ -37,9 +44,13 @@ program
   .action(async () => {
     try {
       console.log('Extracting raw text from PDFs...');
-      execFileSync('python3', [PATHS.EXTRACT_RAW_TEXT_SCRIPT, PATHS.TMP_DIR], {
-        stdio: 'inherit',
-      });
+      execFileSync(
+        'python3',
+        [PATHS.EXTRACT_RAW_TEXT_SCRIPT, PATHS.INPUT_DIR, PATHS.EXTRACT_DIR],
+        {
+          stdio: 'inherit',
+        },
+      );
     } catch (error) {
       console.error('Text extraction failed:', error);
       process.exit(1);
@@ -109,7 +120,7 @@ program
   .action(async (options) => {
     try {
       if (options.clean) {
-        await cleanTmp();
+        await cleanOutput();
       }
 
       // 0. Extract (Python scripts)

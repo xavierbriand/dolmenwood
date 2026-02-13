@@ -105,7 +105,7 @@ export function runExtraction(deps?: ExtractionDeps): ExtractionResult {
   // 3. Run each script
   for (const { name, script, pdf } of SCRIPTS) {
     try {
-      d.execScript('python3', [script, pdf, PATHS.TMP_DIR]);
+      d.execScript('python3', [script, pdf, PATHS.EXTRACT_DIR]);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       throw new Error(`${name} failed: ${message}`);

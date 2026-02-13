@@ -2,9 +2,21 @@
 /.opencode/
 /rules/
 
-# Assets (Proprietary Data)
-assets/*
-!assets/.keep
+# Assets: hand-authored data files contain copyrighted content
+/assets/*
+!/assets/creatures.yaml
+
+# ETL directories: track folder structure, ignore all file contents
+/etl/input/*
+!/etl/input/.gitkeep
+/etl/output/extract/*
+!/etl/output/extract/.gitkeep
+/etl/output/transform/*
+!/etl/output/transform/.gitkeep
+/etl/output/load/creatures/*
+!/etl/output/load/creatures/.gitkeep
+/etl/output/load/treasure-tables/*
+!/etl/output/load/treasure-tables/.gitkeep
 
 # Node
 node_modules/
@@ -22,6 +34,3 @@ pnpm-debug.log*
 # OS
 .DS_Store
 Thumbs.db
-
-# Temporary / ETL
-tmp/
