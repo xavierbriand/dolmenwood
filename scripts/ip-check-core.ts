@@ -7,8 +7,8 @@
  * This is NOT about individual words or creature names -- it's about preventing
  * meaningful passages of copyrighted content from leaking into the public repo.
  *
- * The source material is extracted raw text at tmp/etl/*-raw.txt (one per book).
- * Generate these files with: python3 packages/etl/scripts/extract_raw_text.py
+ * The source material is extracted raw text at etl/output/extract/*-raw.txt (one per book).
+ * Generate these files with: pnpm --filter @dolmenwood/etl start extract-text
  * If no files are present (e.g., in CI), the check is skipped gracefully.
  */
 
@@ -21,7 +21,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, '..');
 
-const SOURCE_MATERIAL_DIR = path.join(ROOT_DIR, 'tmp', 'etl');
+const SOURCE_MATERIAL_DIR = path.join(ROOT_DIR, 'etl', 'output', 'extract');
 const SOURCE_MATERIAL_SUFFIX = '-raw.txt';
 
 /** Minimum character length for a match to be considered a violation. */
@@ -44,7 +44,7 @@ export function normalizeForComparison(text: string): string {
 }
 
 /**
- * Load and normalize source material from all *-raw.txt files in tmp/etl/.
+ * Load and normalize source material from all *-raw.txt files in etl/output/extract/.
  * Returns null if no source material files are available.
  */
 export function loadSourceMaterial(): string | null {

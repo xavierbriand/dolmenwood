@@ -31,7 +31,7 @@ system-context: |
   Critical Constraint: The `@assets` folder is the ONLY allowed location for proprietary content.
   </project_context>
   <policy_context>
-  Source Material: `tmp/etl/dmb-raw.txt` (raw PDF text, gitignored).
+  Source Material: `etl/output/extract/` (raw PDF text and extracted JSON, gitignored).
   Protected Zone: All files within `packages/` (except `packages/etl/`), `scripts/`.
   Enforcement: Pre-commit hook compares source files against PDF text for verbatim chunks (40+ chars).
   </policy_context>

@@ -141,7 +141,8 @@ function buildCreature(overrides: Partial<Creature> = {}): Creature {
 describe('EncounterGenerator - Treasure Integration', () => {
   describe('given a TreasureGenerator is provided', () => {
     it('should include rolled treasure when creature has a treasure field', async () => {
-      const random = new FixedRandom(0.5);
+      // Use 0.1 so the lair check passes (0.1 < 0.3) — hoard is only rolled in lair
+      const random = new FixedRandom(0.1);
       const tableRepo = new MockTableRepository();
       const creatureRepo = new MockCreatureRepository();
 
@@ -224,7 +225,8 @@ describe('EncounterGenerator - Treasure Integration', () => {
     });
 
     it('should include possessions (extras) from treasure code parsing', async () => {
-      const random = new FixedRandom(0.5);
+      // Use 0.1 so the lair check passes (0.1 < 0.3) — hoard + possessions in lair
+      const random = new FixedRandom(0.1);
       const tableRepo = new MockTableRepository();
       const creatureRepo = new MockCreatureRepository();
 
@@ -254,7 +256,8 @@ describe('EncounterGenerator - Treasure Integration', () => {
     });
 
     it('should include treasure in generateEncounter output', async () => {
-      const random = new FixedRandom(0.5);
+      // Use 0.1 so the lair check passes (0.1 < 0.3) — hoard is only rolled in lair
+      const random = new FixedRandom(0.1);
       const tableRepo = new MockTableRepository();
       const creatureRepo = new MockCreatureRepository();
 

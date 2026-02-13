@@ -7,12 +7,11 @@ page separators. Output files are named <prefix>-raw.txt and written to
 the output directory.
 
 Usage:
-    python3 extract_raw_text.py [output_dir]
+    python3 extract_raw_text.py <input_dir> <output_dir>
+    python3 extract_raw_text.py <input_dir>          # output to same dir
+    python3 extract_raw_text.py                      # defaults to etl/input, etl/output/extract
 
-Defaults:
-    output_dir = tmp/etl
-
-Looks for PDFs in the output directory:
+Input directory should contain the source PDFs:
     - DMB.pdf -> dmb-raw.txt
     - DCB.pdf -> dcb-raw.txt
 """
@@ -45,14 +44,18 @@ def extract_text(pdf_path: str, output_path: str) -> None:
 
 
 def main() -> None:
-    # Resolve output directory
-    if len(sys.argv) > 1:
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.abspath(os.path.join(script_dir, "..", "..", ".."))
+
+    if len(sys.argv) >= 3:
+        input_dir = sys.argv[1]
+        output_dir = sys.argv[2]
+    elif len(sys.argv) == 2:
+        input_dir = sys.argv[1]
         output_dir = sys.argv[1]
     else:
-        # Default: tmp/etl relative to project root
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        project_root = os.path.abspath(os.path.join(script_dir, "..", "..", ".."))
-        output_dir = os.path.join(project_root, "tmp", "etl")
+        input_dir = os.path.join(project_root, "etl", "input")
+        output_dir = os.path.join(project_root, "etl", "output", "extract")
 
     os.makedirs(output_dir, exist_ok=True)
 
@@ -60,11 +63,11 @@ def main() -> None:
     skipped = 0
 
     for pdf_name, txt_name in PDF_TARGETS:
-        pdf_path = os.path.join(output_dir, pdf_name)
+        pdf_path = os.path.join(input_dir, pdf_name)
         txt_path = os.path.join(output_dir, txt_name)
 
         if not os.path.exists(pdf_path):
-            print(f"  {pdf_name}: not found, skipping")
+            print(f"  {pdf_name}: not found in {input_dir}, skipping")
             skipped += 1
             continue
 

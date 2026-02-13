@@ -129,7 +129,7 @@ The DCB encounter tables are laid out as multi-column tables in the PDF. PyMuPDF
 
 ### Output format
 
-**File:** `tmp/etl/dcb-encounter-tables.json`
+**File:** `etl/output/extract/dcb-encounter-tables.json`
 
 ```json
 {
@@ -241,7 +241,7 @@ Add config paths and a transform step that reads the Python JSON output and perf
 **File:** `packages/etl/src/config.ts`
 
 ```typescript
-PY_DCB_ENCOUNTERS_JSON: path.join(TMP_DIR, 'dcb-encounter-tables.json'),
+PY_DCB_ENCOUNTERS_JSON: path.join(EXTRACT_DIR, 'dcb-encounter-tables.json'),
 ```
 
 ### Transform step

@@ -69,16 +69,16 @@ The field values (plain text following each ExtraBold label) use `TheAntiquaB-W5
 
 ### What to extract
 
-| Field           | Example                                                           | Notes                                                                                                                          |
-| --------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| Hex ID          | `0106`                                                            | 4-digit format `DDDD`. 200 hexes on a 19×12 grid (columns 01–19, rows 01–12) with 28 missing hexes at the SE corner.           |
-| Name            | `THE OUTLOOK AND THE RED MONOLITH`                                | Decorative title in `AlverataBl` font.                                                                                         |
-| Terrain         | `Tangled forest (3), High Wold`                                   | One or more terrain types with optional `(N)` count, then region(s) after last comma. See terrain parsing below.               |
-| Region(s)       | `High Wold` or `High Wold / Dwelmfurgh`                           | Extracted from the terrain line. 20 hexes have dual regions separated by `/`.                                                  |
-| Lost/Encounters | `2-in-6`                                                          | Always starts with `N-in-6` (N is 1, 2, or 3). Values: 57× `1-in-6`, 99× `2-in-6`, 44× `3-in-6`.                               |
-| Encounter notes | `Encounters are 2-in-6 likely to be with a bewildered banshee...` | Optional prose after the `N-in-6` base chance. Caution: text from the hex body can bleed in; truncate at first sentence break. |
-| Ley lines       | `Ley Line Chell`, `Ley line Ywyr`, etc.                           | 48 hexes. Optional — out of scope for encounter generation but captured for completeness.                                      |
-| Foraging        | `Successful foraging yields 1d3 portions of Wayfarrow...`         | 57 hexes only. No `N-in-6` chance in the field itself; foraging chance is implied by terrain difficulty.                       |
+| Field           | Example                                            | Notes                                                                                                                          |
+| --------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Hex ID          | `0106`                                             | 4-digit format `DDDD`. 200 hexes on a 19×12 grid (columns 01–19, rows 01–12) with 28 missing hexes at the SE corner.           |
+| Name            | `THE OUTLOOK AND THE RED MONOLITH`                 | Decorative title in `AlverataBl` font.                                                                                         |
+| Terrain         | `Tangled forest (3), High Wold`                    | One or more terrain types with optional `(N)` count, then region(s) after last comma. See terrain parsing below.               |
+| Region(s)       | `High Wold` or `High Wold / Dwelmfurgh`            | Extracted from the terrain line. 20 hexes have dual regions separated by `/`.                                                  |
+| Lost/Encounters | `2-in-6`                                           | Always starts with `N-in-6` (N is 1, 2, or 3). Values: 57× `1-in-6`, 99× `2-in-6`, 44× `3-in-6`.                               |
+| Encounter notes | `2-in-6 chance of meeting a [creature]...`         | Optional prose after the `N-in-6` base chance. Caution: text from the hex body can bleed in; truncate at first sentence break. |
+| Ley lines       | `Ley Line Chell`, `Ley line Ywyr`, etc.            | 48 hexes. Optional — out of scope for encounter generation but captured for completeness.                                      |
+| Foraging        | `Foraging here produces 1d3 servings of [herb]...` | 57 hexes only. No `N-in-6` chance in the field itself; foraging chance is implied by terrain difficulty.                       |
 
 ### Extraction approach
 
@@ -149,7 +149,7 @@ The field always starts with `N-in-6`. The challenge is that text from the hex c
 
 ### Foraging extraction
 
-Present on only 57/200 hexes. The foraging field does NOT contain an `N-in-6` chance — instead it describes what can be foraged (e.g., `Successful foraging yields 1d3 portions of Wayfarrow (DPB), in addition to the normal results.`).
+Present on only 57/200 hexes. The foraging field does NOT contain an `N-in-6` chance — instead it describes what can be foraged (e.g., `Foraging here produces 1d3 servings of [herb] (DPB), on top of normal results.`).
 
 The `foragingChance` in the original plan was incorrectly assumed to be per-hex. In the actual DCB, foraging chance is determined by terrain difficulty (same as encounter chance), not a per-hex value. The per-hex foraging field only describes **special foraging results** (bonus herbs/ingredients).
 
@@ -174,7 +174,7 @@ The `foragingChance` in the original plan was incorrectly assumed to be per-hex.
 
 ### Output format
 
-**File:** `tmp/etl/dcb-hexes.json`
+**File:** `etl/output/extract/dcb-hexes.json`
 
 ```json
 [
@@ -185,7 +185,7 @@ The `foragingChance` in the original plan was incorrectly assumed to be per-hex.
     "regions": ["High Wold"],
     "encounterChance": 2,
     "encounterNotes": "",
-    "foragingNotes": "Successful foraging yields 1d3 portions of Wayfarrow (DPB), in addition to the normal results.",
+    "foragingNotes": "Foraging here produces 1d3 servings of [herb] (DPB), on top of normal results.",
     "leyLines": []
   },
   {
@@ -207,7 +207,7 @@ The `foragingChance` in the original plan was incorrectly assumed to be per-hex.
     ],
     "regions": ["Aldweald", "Dwelmfurgh"],
     "encounterChance": 2,
-    "encounterNotes": "Aquatic encounters are 2-in-6 likely to be with Big Chook (p253).",
+    "encounterNotes": "Water-based encounters have a 2-in-6 chance of involving [creature] (p253).",
     "foragingNotes": "",
     "leyLines": ["Chell"]
   }
@@ -444,15 +444,15 @@ Follows the same caching pattern as `YamlTableRepository` and `YamlCreatureRepos
 **File:** `packages/etl/src/config.ts`
 
 ```typescript
-PY_DCB_HEXES_JSON: path.join(TMP_DIR, 'dcb-hexes.json'),
-HEXES_YAML: path.join(ASSETS_DIR, 'hexes.yaml'),
+PY_DCB_HEXES_JSON: path.join(EXTRACT_DIR, 'dcb-hexes.json'),
+HEXES_YAML: path.join(LOAD_DIR, 'hexes', 'hexes.yaml'),
 ```
 
 ### Transform step
 
 **File:** `packages/etl/src/steps/transform-hexes.ts`
 
-Reads `tmp/etl/dcb-hexes.json` and performs:
+Reads `etl/output/extract/dcb-hexes.json` and performs:
 
 1. **Hex ID normalization** — Ensure all IDs are zero-padded to 4 digits.
 2. **Region name normalization** — Match against canonical region names (same 12 as encounter tables).
@@ -722,7 +722,7 @@ When a hex is resolved, show hex metadata including terrain-derived foraging cha
 ```
 Hex 0106 — The Outlook and the Red Monolith
 Region: High Wold | Terrain: Tangled forest (3) — Encounter chance: 2-in-6
-Foraging: 2-in-6 (Successful foraging yields 1d3 portions of Wayfarrow)
+Foraging: 2-in-6 (Foraging here produces 1d3 servings of [herb])
 ```
 
 For dual-region hexes:
@@ -860,9 +860,9 @@ Foraging chance is NOT part of the encounter generation pipeline. It is computed
 - Terrain difficulty → `DIFFICULTY_FORAGING_CHANCE` mapping (Light=1, Moderate=2, Difficult=3).
 - If the hex has `foragingNotes`, they are displayed alongside the base foraging chance.
 
-### Gitignore
+### Symlink
 
-`assets/hexes.yaml` should be gitignored since it is generated from copyrighted source material, same as `creatures.yaml` and `treasure-tables.json`.
+`assets/hexes.yaml` should be a symlink to `../etl/output/load/hexes/hexes.yaml`, following the same pattern as `assets/creatures.yaml`. The `etl/output/load/` directory contents are gitignored; the symlink in `assets/` is tracked. No additional `.gitignore` changes needed.
 
 ## Resolved Questions
 

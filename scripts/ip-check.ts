@@ -9,8 +9,8 @@
  *   pnpm tsx scripts/ip-check.ts          # Scan staged files only (pre-commit)
  *   pnpm tsx scripts/ip-check.ts --all    # Scan all source files (CI / manual)
  *
- * - Requires tmp/etl/*-raw.txt files (raw PDF text) to be present locally.
- *   Generate them with: python3 packages/etl/scripts/extract_raw_text.py
+ * - Requires etl/output/extract/*-raw.txt files (raw PDF text) to be present locally.
+ *   Generate them with: pnpm --filter @dolmenwood/etl start extract-text
  * - Skips gracefully if no source material is available (e.g., in CI).
  * - Excludes packages/etl/ (ETL code inherently processes the source material).
  */
@@ -89,9 +89,9 @@ function reportViolations(violations: ContentViolation[]): void {
   const normalizedSource = loadSourceMaterial();
   if (!normalizedSource) {
     console.log(
-      'ℹ️  Source material (tmp/etl/*-raw.txt) not found. Skipping check.',
+      'ℹ️  Source material (etl/output/extract/*-raw.txt) not found. Skipping check.',
     );
-    console.log('   Run: python3 packages/etl/scripts/extract_raw_text.py');
+    console.log('   Run: pnpm --filter @dolmenwood/etl start extract-text');
     process.exit(0);
   }
 

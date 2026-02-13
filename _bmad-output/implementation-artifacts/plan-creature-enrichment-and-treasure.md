@@ -48,17 +48,18 @@ PDF files (DMB.pdf, DCB.pdf)
   │
   ▼ [EXTRACT — Python/PyMuPDF]
   │  Font-aware, structured extraction
-  │  Outputs JSON files to tmp/etl/
+  │  Outputs JSON files to etl/output/extract/
   │
   ▼ [TRANSFORM — TypeScript]
   │  Domain-specific parsing, validation
   │  Schema enforcement via Zod
   │
   ▼ [LOAD — TypeScript]
-     YAML serialization to assets/
+     Validated output to etl/output/load/
+     Symlinked from assets/
 ```
 
-Python scripts live in `packages/etl/scripts/` and are invoked by the ETL pipeline as a child process (or run standalone). They read PDFs from `tmp/etl/` and write structured JSON to `tmp/etl/`.
+Python scripts live in `packages/etl/scripts/` and are invoked by the ETL pipeline as a child process (or run standalone). They read PDFs from `etl/input/` and write structured JSON to `etl/output/extract/`.
 
 The existing TypeScript transform/load steps continue to handle domain logic, validation, and output — they just consume cleaner, pre-structured input.
 
@@ -106,7 +107,7 @@ Uses PyMuPDF to extract each bestiary creature page into a structured JSON objec
     "encounters": "2d6 (25% in lair)"
   },
   "behaviour": "Sharp-witted, wild, tricksome",
-  "speech": "Tinny voice emanating from head-pot. Sylvan, Woldish (1-in-3 chance)",
+  "speech": "Muffled voice from inside vessel. Common, Fae (1-in-3 chance)",
   "possessions": "None",
   "hoard": "C4 + R4 + M1 + 4d20 pots or jugs",
   "abilities": [...],
@@ -125,13 +126,13 @@ Uses PyMuPDF to extract each bestiary creature page into a structured JSON objec
 - Description dedup: detect overlapping bounding boxes (the PDF has twin text layers for decorative headers)
 - Multi-page creatures: when a page has no `Winona` header, it's a continuation of the previous creature
 
-**Output:** `tmp/etl/dmb-bestiary.json` (array of creature objects)
+**Output:** `etl/output/extract/dmb-bestiary.json` (array of creature objects)
 
 Also extract appendix creatures (animals, mortals, adventurers) with the same approach, producing:
 
-- `tmp/etl/dmb-animals.json`
-- `tmp/etl/dmb-mortals.json`
-- `tmp/etl/dmb-adventurers.json`
+- `etl/output/extract/dmb-animals.json`
+- `etl/output/extract/dmb-mortals.json`
+- `etl/output/extract/dmb-adventurers.json`
 
 ### Phase A2: Extend Core creature schema
 
@@ -207,7 +208,7 @@ Extracts pages 393-432 of the DCB (Part 7: Treasures and Oddments) into structur
   "magicItems": {
     "M1": {
       "chance": 10,
-      "items": "1 armour or weapon (equal chance of either)",
+      "items": "1 piece of protective or offensive gear (equal chance)",
       "averageValue": 670
     },
     ...
@@ -279,7 +280,7 @@ Each of the 13 magic item categories extracted as a table:
 }
 ```
 
-**Output:** `tmp/etl/dcb-treasure-tables.json`
+**Output:** `etl/output/extract/dcb-treasure-tables.json`
 
 ### Phase B2: Core treasure schemas
 
