@@ -1,0 +1,3 @@
+# Python dependencies for ETL scripts (packages/etl/scripts/)
+# Pin to major.minor to allow patch-level security fixes
+PyMuPDF>=1.26,<2.0
