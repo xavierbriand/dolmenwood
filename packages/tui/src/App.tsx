@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { Box, Text, useApp, useInput, useStdin } from 'ink';
 import type { GenerationContext } from '@dolmenwood/core';
-import { Header, type HeaderSession } from './components/Header.js';
+import { Header } from './components/Header.js';
 import { StatusBar } from './components/StatusBar.js';
 import { NarrowWarning } from './components/NarrowWarning.js';
 import { EncounterForm } from './components/EncounterForm.js';
 import { EncounterResult } from './components/EncounterResult.js';
+import { SessionList } from './components/SessionList.js';
 import { useEncounterGen } from './hooks/useEncounterGen.js';
+import { useSessionManager } from './hooks/useSessionManager.js';
 import type { View } from './types.js';
 
 export interface AppProps {
@@ -14,16 +16,15 @@ export interface AppProps {
   onExit?: () => void;
   /** Starting screen. Defaults to `'home'`. Used by tests. */
   initialView?: View;
-  /** Active session for the header badge. Wired to `SessionService` in Phase 4. */
-  session?: HeaderSession | null;
 }
 
-export function App({ onExit, initialView = 'home', session = null }: AppProps) {
+export function App({ onExit, initialView = 'home' }: AppProps) {
   const app = useApp();
   const { isRawModeSupported } = useStdin();
   const [view, setView] = useState<View>(initialView);
   const [lastContext, setLastContext] = useState<GenerationContext | null>(null);
   const gen = useEncounterGen();
+  const sessions = useSessionManager();
 
   const exit = onExit ?? (() => app.exit());
 
@@ -46,11 +47,8 @@ export function App({ onExit, initialView = 'home', session = null }: AppProps) 
           gen.clear();
           setView('home');
         }
-        return;
       }
-
-      // EncounterForm owns Esc while it is mounted (back one step / cancel).
-      if (key.escape && view !== 'encounter-form') setView('home');
+      // 'encounter-form' and 'sessions' own their own Esc handling.
     },
     // Keyboard input needs a TTY in raw mode; render statically otherwise
     // (piped stdin, CI) instead of crashing. Coerce to a real boolean — Ink's
@@ -64,10 +62,18 @@ export function App({ onExit, initialView = 'home', session = null }: AppProps) 
     setView('encounter-result');
   };
 
+  const active = sessions.activeSession;
+
   return (
     <Box flexDirection="column">
       <NarrowWarning />
-      <Header session={session} />
+      <Header
+        session={
+          active
+            ? { id: active.id, partyLevel: active.context.partyLevel }
+            : null
+        }
+      />
       <Box marginY={1}>
         {view === 'encounter-form' ? (
           <EncounterForm
@@ -80,25 +86,15 @@ export function App({ onExit, initialView = 'home', session = null }: AppProps) 
             loading={gen.loading}
             error={gen.error}
           />
+        ) : view === 'sessions' ? (
+          <SessionList manager={sessions} onBack={() => setView('home')} />
         ) : (
-          <MainView view={view} />
+          <Text dimColor>
+            Press [G] to generate an encounter, or [S] to manage sessions.
+          </Text>
         )}
       </Box>
       <StatusBar view={view} />
     </Box>
   );
-}
-
-/** View router for the remaining placeholder screens (Phase 4 replaces these). */
-function MainView({ view }: { view: View }) {
-  switch (view) {
-    case 'sessions':
-      return <Text>Sessions (Phase 4)</Text>;
-    default:
-      return (
-        <Text dimColor>
-          Press [G] to generate an encounter, or [S] to manage sessions.
-        </Text>
-      );
-  }
 }

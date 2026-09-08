@@ -16,7 +16,6 @@ import {
   JsonTreasureTableRepository,
 } from '@dolmenwood/data';
 import { App } from './App.js';
-import type { HeaderSession } from './components/Header.js';
 import { ServicesProvider } from './context/ServicesContext.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -49,15 +48,9 @@ export async function runTui(): Promise<void> {
     treasureGen,
   );
 
-  const latest = await sessionService.getLatestSession();
-  const session: HeaderSession | null =
-    latest.kind === 'success'
-      ? { id: latest.data.id, partyLevel: latest.data.context.partyLevel }
-      : null;
-
   const { waitUntilExit } = render(
     <ServicesProvider value={{ generator, sessionService, tableRepo }}>
-      <App session={session} />
+      <App />
     </ServicesProvider>,
   );
   await waitUntilExit();

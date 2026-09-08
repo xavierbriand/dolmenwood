@@ -2,7 +2,23 @@ import type {
   Creature,
   Encounter,
   RolledTreasure,
+  SessionState,
 } from '@dolmenwood/core';
+
+let seq = 0;
+
+export function makeSession(overrides: Partial<SessionState> = {}): SessionState {
+  seq += 1;
+  const stamp = `2026-09-0${Math.min(seq, 9)}T12:00:00.000Z`;
+  return {
+    id: `session-${seq}-aaaaaaaa`,
+    createdAt: stamp,
+    updatedAt: stamp,
+    context: { partyLevel: 1, timeOfDay: 'Day', currentRegionId: undefined },
+    history: [],
+    ...overrides,
+  };
+}
 
 export function makeCreature(overrides: Partial<Creature> = {}): Creature {
   return {
