@@ -16,33 +16,40 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       # Installing pnpm first is generally preferred to enable caching in setup-node
       - name: Install pnpm
-        uses: pnpm/action-setup@v2
+        uses: pnpm/action-setup@v6
         with:
-          version: 9
+          version: 10
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 20
           cache: 'pnpm'
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.12'
 
       - name: Install dependencies
         run: |
-          pnpm install
+          pnpm install --frozen-lockfile
           pip install -r requirements.txt
           pip install pip-audit
 
-      - name: Audit Node.js dependencies
-        run: pnpm audit
+      # Blocking: fails CI only on advisories affecting shipped (production) dependencies.
+      - name: Audit Node.js production dependencies
+        run: pnpm audit --prod
+
+      # Informational: transitive dev-tooling advisories (eslint, vite, tsx, …)
+      # are surfaced but do not block unrelated PRs. Resolved via Dependabot
+      # upgrades of the top-level dev dependencies.
+      - name: Audit full Node.js dependency tree (informational)
+        run: pnpm audit || true
 
       - name: Audit Python dependencies
         run: pip-audit -r requirements.txt

@@ -26,7 +26,7 @@ export async function loadCreatures(): Promise<void> {
     } else {
       errors.push({
         name: (item as { name?: string }).name || 'Unknown',
-        issues: result.error.errors,
+        issues: result.error.issues,
       });
     }
   }
