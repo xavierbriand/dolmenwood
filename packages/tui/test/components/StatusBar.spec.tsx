@@ -11,14 +11,18 @@ describe('<StatusBar>', () => {
     expect(frame).toContain('[Q]uit');
   });
 
-  it('shows a back hint in every sub-view', () => {
-    for (const view of [
-      'encounter-form',
-      'encounter-result',
-      'sessions',
-    ] as const) {
+  it('shows a back hint in form and session sub-views', () => {
+    for (const view of ['encounter-form', 'sessions'] as const) {
       const { lastFrame } = render(<StatusBar view={view} />);
       expect(lastFrame()).toContain('[Esc] Back');
     }
+  });
+
+  it('shows reroll / new / home hints on the result view', () => {
+    const { lastFrame } = render(<StatusBar view="encounter-result" />);
+    const f = lastFrame() ?? '';
+    expect(f).toContain('[G] Reroll');
+    expect(f).toContain('[Enter] New encounter');
+    expect(f).toContain('[Esc] Home');
   });
 });

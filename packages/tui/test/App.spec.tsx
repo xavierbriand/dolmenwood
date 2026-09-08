@@ -6,13 +6,17 @@ import {
   ServicesProvider,
   type Services,
 } from '../src/context/ServicesContext.js';
+import { makeCreatureEncounter } from './fixtures.js';
 
 const ESC = '\x1B';
 const tick = () => new Promise((r) => setTimeout(r, 30));
 
 function renderApp(props: React.ComponentProps<typeof App> = {}) {
+  const generateEncounter = vi
+    .fn()
+    .mockResolvedValue({ kind: 'success', data: makeCreatureEncounter() });
   const services = {
-    generator: {} as Services['generator'],
+    generator: { generateEncounter } as unknown as Services['generator'],
     sessionService: {} as Services['sessionService'],
     tableRepo: {
       listTables: vi.fn().mockResolvedValue({
@@ -22,11 +26,11 @@ function renderApp(props: React.ComponentProps<typeof App> = {}) {
       getTable: vi.fn(),
     } as unknown as Services['tableRepo'],
   };
-  return render(
+  return { ...render(
     <ServicesProvider value={services}>
       <App {...props} />
     </ServicesProvider>,
-  );
+  ), generateEncounter };
 }
 
 describe('<App> shell', () => {
@@ -89,9 +93,7 @@ describe('<App> shell', () => {
     expect(lastFrame()).toContain('abcdef12');
   });
 
-  it('shows the submitted context on the result view after the form', async () => {
-    const { lastFrame, stdin } = renderApp();
-    await tick();
+  async function walkFormToResult(stdin: { write: (s: string) => void }) {
     stdin.write('g'); // -> form
     await tick();
     stdin.write('\r'); // region: Hexwood
@@ -100,11 +102,55 @@ describe('<App> shell', () => {
     await tick();
     stdin.write('\r'); // terrain: Off-road -> Day flow submits
     await tick();
+  }
 
+  it('generates and renders an encounter after the form is submitted', async () => {
+    const { lastFrame, stdin, generateEncounter } = renderApp();
+    await tick();
+    await walkFormToResult(stdin);
+
+    expect(generateEncounter).toHaveBeenCalledWith({
+      regionId: 'hexwood',
+      timeOfDay: 'Day',
+      terrain: 'Off-road',
+      camping: false,
+    });
     const frame = lastFrame() ?? '';
-    expect(frame).toContain('Encounter result');
-    expect(frame).toContain('hexwood');
-    expect(frame).toContain('Day');
-    expect(frame).toContain('Off-road');
+    expect(frame).toContain('3 x Forest Sprite');
+    expect(frame).toContain('[G] Reroll');
+  });
+
+  it('rerolls on "g" from the result view', async () => {
+    const { stdin, generateEncounter } = renderApp();
+    await tick();
+    await walkFormToResult(stdin);
+    expect(generateEncounter).toHaveBeenCalledTimes(1);
+
+    stdin.write('g');
+    await tick();
+    expect(generateEncounter).toHaveBeenCalledTimes(2);
+  });
+
+  it('returns to the form on Enter and home on Esc from the result view', async () => {
+    const { lastFrame, stdin } = renderApp();
+    await tick();
+    await walkFormToResult(stdin);
+
+    stdin.write('\r'); // Enter -> back to form
+    await tick();
+    expect(lastFrame()).toContain('Select region');
+
+    // submit again to get back to the result view
+    stdin.write('\r');
+    await tick();
+    stdin.write('\r');
+    await tick();
+    stdin.write('\r');
+    await tick();
+    expect(lastFrame()).toContain('3 x Forest Sprite');
+
+    stdin.write(ESC); // -> home
+    await tick();
+    expect(lastFrame()).toContain('[G]enerate');
   });
 });
