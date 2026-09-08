@@ -6,18 +6,30 @@ import {
   ServicesProvider,
   type Services,
 } from '../src/context/ServicesContext.js';
-import { makeCreatureEncounter } from './fixtures.js';
+import { makeCreatureEncounter, makeSession } from './fixtures.js';
 
 const ESC = '\x1B';
 const tick = () => new Promise((r) => setTimeout(r, 30));
 
-function renderApp(props: React.ComponentProps<typeof App> = {}) {
+interface RenderOpts {
+  props?: React.ComponentProps<typeof App>;
+  sessions?: ReturnType<typeof makeSession>[];
+}
+
+function renderApp({ props = {}, sessions = [] }: RenderOpts = {}) {
   const generateEncounter = vi
     .fn()
     .mockResolvedValue({ kind: 'success', data: makeCreatureEncounter() });
+  const listSessions = vi
+    .fn()
+    .mockResolvedValue({ kind: 'success', data: sessions });
   const services = {
     generator: { generateEncounter } as unknown as Services['generator'],
-    sessionService: {} as Services['sessionService'],
+    sessionService: {
+      listSessions,
+      createSession: vi.fn(),
+      addEncounter: vi.fn(),
+    } as unknown as Services['sessionService'],
     tableRepo: {
       listTables: vi.fn().mockResolvedValue({
         kind: 'success',
@@ -26,11 +38,15 @@ function renderApp(props: React.ComponentProps<typeof App> = {}) {
       getTable: vi.fn(),
     } as unknown as Services['tableRepo'],
   };
-  return { ...render(
-    <ServicesProvider value={services}>
-      <App {...props} />
-    </ServicesProvider>,
-  ), generateEncounter };
+  return {
+    ...render(
+      <ServicesProvider value={services}>
+        <App {...props} />
+      </ServicesProvider>,
+    ),
+    generateEncounter,
+    listSessions,
+  };
 }
 
 describe('<App> shell', () => {
@@ -57,17 +73,22 @@ describe('<App> shell', () => {
     expect(lastFrame()).toContain('[G]enerate');
   });
 
-  it('routes to sessions on "s"', async () => {
-    const { lastFrame, stdin } = renderApp();
+  it('routes to sessions on "s" and back home on Esc', async () => {
+    const { lastFrame, stdin } = renderApp({ sessions: [makeSession()] });
     await tick();
     stdin.write('s');
     await tick();
     expect(lastFrame()).toContain('Sessions');
+    expect(lastFrame()).toContain('[Esc] Back');
+
+    stdin.write(ESC);
+    await tick();
+    expect(lastFrame()).toContain('[G]enerate');
   });
 
   it('calls onExit on "q" from home', async () => {
     const onExit = vi.fn();
-    const { stdin } = renderApp({ onExit });
+    const { stdin } = renderApp({ props: { onExit } });
     await tick();
     stdin.write('q');
     await tick();
@@ -76,7 +97,7 @@ describe('<App> shell', () => {
 
   it('ignores "q" while in a sub-view', async () => {
     const onExit = vi.fn();
-    const { stdin } = renderApp({ onExit });
+    const { stdin } = renderApp({ props: { onExit } });
     await tick();
     stdin.write('s');
     await tick();
@@ -85,12 +106,14 @@ describe('<App> shell', () => {
     expect(onExit).not.toHaveBeenCalled();
   });
 
-  it('renders the active-session badge when given one', () => {
-    const { lastFrame } = renderApp({
-      session: { id: 'abcdef12-3456-7890', partyLevel: 3 },
+  it('shows the active-session badge from the session manager', async () => {
+    const session = makeSession({
+      context: { partyLevel: 3, timeOfDay: 'Day' },
     });
+    const { lastFrame } = renderApp({ sessions: [session] });
+    await tick();
     expect(lastFrame()).toContain('L3');
-    expect(lastFrame()).toContain('abcdef12');
+    expect(lastFrame()).toContain(session.id.slice(0, 8));
   });
 
   async function walkFormToResult(stdin: { write: (s: string) => void }) {
