@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { Box, Text, useApp, useInput, useStdin } from 'ink';
+import type { GenerationContext } from '@dolmenwood/core';
 import { Header, type HeaderSession } from './components/Header.js';
 import { StatusBar } from './components/StatusBar.js';
 import { NarrowWarning } from './components/NarrowWarning.js';
+import { EncounterForm } from './components/EncounterForm.js';
 import type { View } from './types.js';
 
 export interface AppProps {
@@ -18,6 +20,9 @@ export function App({ onExit, initialView = 'home', session = null }: AppProps) 
   const app = useApp();
   const { isRawModeSupported } = useStdin();
   const [view, setView] = useState<View>(initialView);
+  const [pendingContext, setPendingContext] = useState<GenerationContext | null>(
+    null,
+  );
 
   const exit = onExit ?? (() => app.exit());
 
@@ -29,7 +34,8 @@ export function App({ onExit, initialView = 'home', session = null }: AppProps) 
         else if (input === 'q') exit();
         return;
       }
-      if (key.escape) setView('home');
+      // EncounterForm owns Esc while it is mounted (back one step / cancel).
+      if (key.escape && view !== 'encounter-form') setView('home');
     },
     // Keyboard input needs a TTY in raw mode; render statically otherwise
     // (piped stdin, CI) instead of crashing. Coerce to a real boolean — Ink's
@@ -37,12 +43,24 @@ export function App({ onExit, initialView = 'home', session = null }: AppProps) 
     { isActive: Boolean(isRawModeSupported) },
   );
 
+  const handleFormSubmit = (context: GenerationContext) => {
+    setPendingContext(context);
+    setView('encounter-result');
+  };
+
   return (
     <Box flexDirection="column">
       <NarrowWarning />
       <Header session={session} />
       <Box marginY={1}>
-        <MainView view={view} />
+        {view === 'encounter-form' ? (
+          <EncounterForm
+            onSubmit={handleFormSubmit}
+            onCancel={() => setView('home')}
+          />
+        ) : (
+          <MainView view={view} pendingContext={pendingContext} />
+        )}
       </Box>
       <StatusBar view={view} />
     </Box>
@@ -50,15 +68,30 @@ export function App({ onExit, initialView = 'home', session = null }: AppProps) 
 }
 
 /**
- * View router. Phases 2–4 replace each placeholder with the real component
- * (`<EncounterForm>`, `<EncounterResult>`, `<SessionList>`).
+ * View router for the non-form screens. Phases 3–4 replace these placeholders
+ * with `<EncounterResult>` and `<SessionList>`.
  */
-function MainView({ view }: { view: View }) {
+function MainView({
+  view,
+  pendingContext,
+}: {
+  view: View;
+  pendingContext: GenerationContext | null;
+}) {
   switch (view) {
-    case 'encounter-form':
-      return <Text>Select Region — encounter form (Phase 2)</Text>;
     case 'encounter-result':
-      return <Text>Encounter result (Phase 3)</Text>;
+      return (
+        <Box flexDirection="column">
+          <Text>Encounter result (Phase 3)</Text>
+          {pendingContext ? (
+            <Text dimColor>
+              {pendingContext.regionId} · {pendingContext.timeOfDay} ·{' '}
+              {pendingContext.terrain}
+              {pendingContext.camping ? ' · camping' : ''}
+            </Text>
+          ) : null}
+        </Box>
+      );
     case 'sessions':
       return <Text>Sessions (Phase 4)</Text>;
     default:
