@@ -23,12 +23,16 @@ function renderApp({ props = {}, sessions = [] }: RenderOpts = {}) {
   const listSessions = vi
     .fn()
     .mockResolvedValue({ kind: 'success', data: sessions });
+  const addEncounter = vi.fn().mockImplementation((id: string) => {
+    const s = sessions.find((x) => x.id === id) ?? sessions[0];
+    return Promise.resolve({ kind: 'success', data: s });
+  });
   const services = {
     generator: { generateEncounter } as unknown as Services['generator'],
     sessionService: {
       listSessions,
       createSession: vi.fn(),
-      addEncounter: vi.fn(),
+      addEncounter,
     } as unknown as Services['sessionService'],
     tableRepo: {
       listTables: vi.fn().mockResolvedValue({
@@ -46,6 +50,7 @@ function renderApp({ props = {}, sessions = [] }: RenderOpts = {}) {
     ),
     generateEncounter,
     listSessions,
+    addEncounter,
   };
 }
 
@@ -175,5 +180,42 @@ describe('<App> shell', () => {
     stdin.write(ESC); // -> home
     await tick();
     expect(lastFrame()).toContain('[G]enerate');
+  });
+
+  it('auto-saves the encounter when a session is active', async () => {
+    const session = makeSession();
+    const { lastFrame, stdin, addEncounter } = renderApp({
+      sessions: [session],
+    });
+    await tick();
+    await walkFormToResult(stdin);
+
+    expect(addEncounter).toHaveBeenCalledWith(
+      session.id,
+      expect.objectContaining({ summary: '3 x Forest Sprite' }),
+      'hexwood',
+    );
+    expect(lastFrame()).toContain('SAVED');
+  });
+
+  it('re-saves on reroll', async () => {
+    const { stdin, addEncounter } = renderApp({ sessions: [makeSession()] });
+    await tick();
+    await walkFormToResult(stdin);
+    expect(addEncounter).toHaveBeenCalledTimes(1);
+
+    stdin.write('g');
+    await tick();
+    expect(addEncounter).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not save and shows a hint when no session is active', async () => {
+    const { lastFrame, stdin, addEncounter } = renderApp({ sessions: [] });
+    await tick();
+    expect(lastFrame()).toContain('No active session');
+
+    await walkFormToResult(stdin);
+    expect(addEncounter).not.toHaveBeenCalled();
+    expect(lastFrame()).not.toContain('SAVED');
   });
 });

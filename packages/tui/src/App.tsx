@@ -23,10 +23,21 @@ export function App({ onExit, initialView = 'home' }: AppProps) {
   const { isRawModeSupported } = useStdin();
   const [view, setView] = useState<View>(initialView);
   const [lastContext, setLastContext] = useState<GenerationContext | null>(null);
+  const [saved, setSaved] = useState(false);
   const gen = useEncounterGen();
   const sessions = useSessionManager();
 
   const exit = onExit ?? (() => app.exit());
+
+  /** Roll an encounter and, when a session is active, auto-save it to history. */
+  const runGenerate = (context: GenerationContext) => {
+    setSaved(false);
+    void gen.generate(context).then((encounter) => {
+      if (encounter && sessions.activeSession) {
+        void sessions.saveEncounter(encounter, context.regionId).then(setSaved);
+      }
+    });
+  };
 
   useInput(
     (input, key) => {
@@ -39,7 +50,7 @@ export function App({ onExit, initialView = 'home' }: AppProps) {
 
       if (view === 'encounter-result') {
         if (input === 'g' && lastContext) {
-          void gen.generate(lastContext);
+          runGenerate(lastContext);
         } else if (key.return) {
           gen.clear();
           setView('encounter-form');
@@ -58,7 +69,7 @@ export function App({ onExit, initialView = 'home' }: AppProps) {
 
   const handleFormSubmit = (context: GenerationContext) => {
     setLastContext(context);
-    void gen.generate(context);
+    runGenerate(context);
     setView('encounter-result');
   };
 
@@ -85,6 +96,7 @@ export function App({ onExit, initialView = 'home' }: AppProps) {
             encounter={gen.encounter}
             loading={gen.loading}
             error={gen.error}
+            saved={saved}
           />
         ) : view === 'sessions' ? (
           <SessionList manager={sessions} onBack={() => setView('home')} />
@@ -95,6 +107,11 @@ export function App({ onExit, initialView = 'home' }: AppProps) {
         )}
       </Box>
       <StatusBar view={view} />
+      {!active && (
+        <Text dimColor>
+          No active session — open [S]essions and press [N] to track encounters.
+        </Text>
+      )}
     </Box>
   );
 }

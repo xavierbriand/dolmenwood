@@ -3,6 +3,12 @@ paths:
   - "packages/tui/**"
 ---
 
+# This is the default `deg` experience
+
+`deg` with no subcommand does `import('@dolmenwood/tui')` and calls `runTui()`
+(`packages/cli/src/index.ts`). There is no Inquirer fallback — this package is
+the only interactive mode.
+
 # Ink 5 and React 18 are pinned deliberately
 
 `ink@5` + `react@18` + `@inkjs/ui@2`, not the latest majors — don't bump them

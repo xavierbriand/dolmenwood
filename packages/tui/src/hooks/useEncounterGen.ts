@@ -6,8 +6,11 @@ export interface EncounterGenApi {
   encounter: Encounter | null;
   loading: boolean;
   error: string | null;
-  /** Roll an encounter for `context`. Never rejects — failures land in `error`. */
-  generate: (context: GenerationContext) => Promise<void>;
+  /**
+   * Roll an encounter for `context`. Never rejects — failures land in `error`.
+   * Resolves with the encounter on success, or `null` on failure.
+   */
+  generate: (context: GenerationContext) => Promise<Encounter | null>;
   clear: () => void;
 }
 
@@ -22,20 +25,22 @@ export function useEncounterGen(): EncounterGenApi {
   const [error, setError] = useState<string | null>(null);
 
   const generate = useCallback(
-    async (context: GenerationContext) => {
+    async (context: GenerationContext): Promise<Encounter | null> => {
       setLoading(true);
       setError(null);
       try {
         const result = await generator.generateEncounter(context);
         if (result.kind === 'success') {
           setEncounter(result.data);
-        } else {
-          setEncounter(null);
-          setError(result.error.message);
+          return result.data;
         }
+        setEncounter(null);
+        setError(result.error.message);
+        return null;
       } catch (err) {
         setEncounter(null);
         setError(err instanceof Error ? err.message : String(err));
+        return null;
       } finally {
         setLoading(false);
       }

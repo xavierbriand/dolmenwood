@@ -74,13 +74,23 @@ describe('useEncounterGen', () => {
     expect(generateEncounter).toHaveBeenCalledWith(CONTEXT);
   });
 
-  it('records the message on a failure Result', async () => {
+  it('resolves with the encounter on success', async () => {
+    const encounter = makeCreatureEncounter();
+    const h = mountHook({
+      generateEncounter: vi
+        .fn()
+        .mockResolvedValue({ kind: 'success', data: encounter }),
+    });
+    await expect(h.api.generate(CONTEXT)).resolves.toEqual(encounter);
+  });
+
+  it('records the message on a failure Result and resolves null', async () => {
     const h = mountHook({
       generateEncounter: vi
         .fn()
         .mockResolvedValue({ kind: 'failure', error: new Error('no table') }),
     });
-    await h.api.generate(CONTEXT);
+    await expect(h.api.generate(CONTEXT)).resolves.toBeNull();
     await tick();
     expect(h.api.loading).toBe(false);
     expect(h.api.encounter).toBeNull();

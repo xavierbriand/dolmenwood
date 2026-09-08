@@ -18,7 +18,6 @@ import {
   JsonTreasureTableRepository,
 } from '@dolmenwood/data';
 import { createSessionCommand } from './commands/session.js';
-import { InteractiveService } from './services/InteractiveService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -241,16 +240,14 @@ program
     }
   });
 
-// Handle Default Interactive Mode
+// No subcommand: launch the interactive terminal UI (@dolmenwood/tui).
 if (process.argv.length <= 2) {
-  createGenerator().then((generator) => {
-    const interactive = new InteractiveService(
-      generator,
-      sessionService,
-      tableRepo,
-    );
-    interactive.start();
-  });
+  import('@dolmenwood/tui')
+    .then(({ runTui }) => runTui())
+    .catch((error) => {
+      console.error(chalk.red('Failed to start the TUI:'), error);
+      process.exit(1);
+    });
 } else {
   program.parse();
 }

@@ -76,15 +76,19 @@ etl/
 
 ## Usage
 
-### Interactive Mode
+### Interactive Mode (TUI)
 
-Run the CLI with no arguments for an interactive menu:
+Run the CLI with no arguments to launch the terminal UI (`@dolmenwood/tui`,
+built with Ink). Requires a prior `pnpm build`:
 
 ```bash
-pnpm start
+pnpm start          # or: pnpm start:tui
 ```
 
-This prompts you to select a region, time of day, terrain, and camping status, then generates a full encounter with creature stats.
+Keyboard-driven: `[G]` walks a region → time → terrain → camping form and shows
+the full encounter (creature stats, treasure, surprise) in a persistent panel;
+`[G]` again rerolls the same context. `[S]` browses session history and creates
+sessions. When a session is active, generated encounters are auto-saved to it.
 
 ### Command-Line Mode
 
@@ -104,15 +108,6 @@ pnpm start -- encounter <region_id> [options]
 
 ```bash
 pnpm start -- encounter "high-wold" --time Night --terrain Road
-```
-
-### Interactive TUI
-
-An Ink-based terminal UI (in active development) runs the same generation flow in a richer full-screen interface:
-
-```bash
-pnpm build      # required before the first run
-pnpm start:tui
 ```
 
 ### Session Management
@@ -150,11 +145,11 @@ CLI / TUI (driving) --> Data (driven) --> Core (domain)
 | ------------------ | -------------------------------------------- | -------------------------------- |
 | `@dolmenwood/core` | Pure domain logic, entities, port interfaces | `zod`, `ts-pattern`              |
 | `@dolmenwood/data` | Adapters for YAML/JSON data loading          | `js-yaml`, `zod`                 |
-| `@dolmenwood/cli`  | Command-line interface, dependency injection | `commander`, `inquirer`, `chalk` |
-| `@dolmenwood/tui`  | Interactive terminal UI (driving adapter)    | `ink`, `react`, `@inkjs/ui`      |
+| `@dolmenwood/cli`  | Command-line interface, dependency injection | `commander`, `chalk`             |
+| `@dolmenwood/tui`  | Interactive terminal UI (default `deg` mode) | `ink`, `react`, `@inkjs/ui`      |
 | `@dolmenwood/etl`  | PDF extraction and data transformation       | `commander`, `js-yaml`, `zod`    |
 
-**Dependency rule:** Core knows nothing of the outer layers — enforced by `packages/core/src/purity.spec.ts`, not just documented. Data implements port interfaces defined in Core; the CLI and TUI wire everything together.
+**Dependency rule:** Core knows nothing of the outer layers — enforced by `packages/core/src/purity.spec.ts`, not just documented. Data implements port interfaces defined in Core; the CLI and TUI are primary adapters over Core, and `deg` with no subcommand delegates to the TUI.
 
 ### Asset Files
 
