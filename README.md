@@ -1,6 +1,8 @@
 # Dolmenwood Encounter Generator
 
-A CLI tool for generating random encounters for the [Dolmenwood](https://necroticgnome.com/collections/dolmenwood) TTRPG setting by Necrotic Gnome. Built with a **Hexagonal Architecture** in a TypeScript monorepo.
+A tool for generating random encounters for the [Dolmenwood](https://necroticgnome.com/collections/dolmenwood) TTRPG setting by Necrotic Gnome — a command-line interface plus an interactive terminal UI, built with a **Hexagonal Architecture** in a TypeScript monorepo.
+
+For the project's objective and durable constraints, see [PROJECT.md](PROJECT.md).
 
 ## Getting Started
 
@@ -104,6 +106,15 @@ pnpm start -- encounter <region_id> [options]
 pnpm start -- encounter "high-wold" --time Night --terrain Road
 ```
 
+### Interactive TUI
+
+An Ink-based terminal UI (in active development) runs the same generation flow in a richer full-screen interface:
+
+```bash
+pnpm build      # required before the first run
+pnpm start:tui
+```
+
 ### Session Management
 
 ```bash
@@ -123,14 +134,16 @@ pnpm start -- session info     # Show latest session details
 
 ```bash
 pnpm build    # Build all packages
-pnpm test     # Run all tests (284 across 4 packages + scripts)
+pnpm test     # Run all tests (all 5 packages + scripts)
 pnpm lint     # Lint all packages
 ```
+
+Before opening a PR, `pnpm build && pnpm lint && pnpm test` must be green, and anything user-facing should be run once (`pnpm start` or `pnpm start:tui`). See [CLAUDE.md](CLAUDE.md) for how a change is made.
 
 ### Architecture
 
 ```
-CLI (driving) --> Data (driven) --> Core (domain)
+CLI / TUI (driving) --> Data (driven) --> Core (domain)
 ```
 
 | Package            | Role                                         | Key Dependencies                 |
@@ -138,9 +151,10 @@ CLI (driving) --> Data (driven) --> Core (domain)
 | `@dolmenwood/core` | Pure domain logic, entities, port interfaces | `zod`, `ts-pattern`              |
 | `@dolmenwood/data` | Adapters for YAML/JSON data loading          | `js-yaml`, `zod`                 |
 | `@dolmenwood/cli`  | Command-line interface, dependency injection | `commander`, `inquirer`, `chalk` |
+| `@dolmenwood/tui`  | Interactive terminal UI (driving adapter)    | `ink`, `react`, `@inkjs/ui`      |
 | `@dolmenwood/etl`  | PDF extraction and data transformation       | `commander`, `js-yaml`, `zod`    |
 
-**Dependency rule:** Core knows nothing of the outer layers. Data implements port interfaces defined in Core. CLI wires everything together.
+**Dependency rule:** Core knows nothing of the outer layers — enforced by `packages/core/src/purity.spec.ts`, not just documented. Data implements port interfaces defined in Core; the CLI and TUI wire everything together.
 
 ### Asset Files
 
