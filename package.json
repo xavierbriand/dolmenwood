@@ -12,7 +12,8 @@
     "test": "pnpm -r test && vitest run scripts/",
     "lint": "pnpm -r lint",
     "start": "pnpm --filter @dolmenwood/cli start",
-    "prepare": "husky"
+    "prepare": "husky",
+    "start:tui": "pnpm --filter @dolmenwood/tui start"
   },
   "keywords": [],
   "author": "BMad",
@@ -25,6 +26,8 @@
     "@types/pdf-parse": "^1.1.5",
     "eslint": "^9.39.2",
     "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-security": "^4.0.0",
     "globals": "^17.4.0",
     "husky": "^9.1.7",
