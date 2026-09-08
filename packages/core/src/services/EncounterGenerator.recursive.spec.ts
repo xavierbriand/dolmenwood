@@ -35,7 +35,7 @@ class MockCreatureRepository implements CreatureRepository {
       xp: 10,
       numberAppearing: '1',
       armourClass: 10,
-      movement: 30,
+      movement: { walk: 30 },
       hitDice: '1d6',
       attacks: ['None'],
       morale: 7,

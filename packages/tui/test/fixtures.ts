@@ -28,7 +28,7 @@ export function makeCreature(overrides: Partial<Creature> = {}): Creature {
     xp: 25,
     numberAppearing: '1d6',
     armourClass: 14,
-    movement: "120'",
+    movement: { walk: 120 },
     hitDice: '2',
     attacks: ['Claw (1d4)', 'Bite (1d6)'],
     morale: 7,

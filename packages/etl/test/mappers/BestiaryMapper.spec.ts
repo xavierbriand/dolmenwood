@@ -76,9 +76,9 @@ describe('BestiaryMapper', () => {
       expect(result.attacks).toEqual(['Clawed grasp (+3, 1d10 + life drain)']);
     });
 
-    it('should map movement as number when speed-only', () => {
+    it('should map movement as a walk rate when speed-only', () => {
       result = mapper.map(sampleInput);
-      expect(result.movement).toBe(40);
+      expect(result.movement).toEqual({ walk: 40 });
     });
 
     it('should map morale', () => {
@@ -166,13 +166,13 @@ describe('BestiaryMapper', () => {
   });
 
   describe('given a creature with composite movement', () => {
-    it('should compose speed + fly as string', () => {
+    it('should keep speed + fly as separate modes', () => {
       const input = {
         ...sampleInput,
         stats: { ...sampleInput.stats, speed: '30', fly: '60' },
       };
       const result = mapper.map(input);
-      expect(result.movement).toBe('30 Fly 60');
+      expect(result.movement).toEqual({ walk: 30, fly: 60 });
     });
   });
 

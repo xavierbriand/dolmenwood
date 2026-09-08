@@ -1,5 +1,6 @@
 import { Box, Text } from 'ink';
 import { Badge, Spinner, StatusMessage } from '@inkjs/ui';
+import { formatMovement } from '@dolmenwood/core';
 import type { Creature, Encounter, RolledTreasure } from '@dolmenwood/core';
 
 export interface EncounterResultProps {
@@ -38,7 +39,7 @@ function CreatureBlock({ creature }: { creature: Creature }) {
         <Text dimColor> HD </Text>
         {creature.hitDice}
         <Text dimColor> MV </Text>
-        {creature.movement}
+        {formatMovement(creature.movement)}
         <Text dimColor> Morale </Text>
         {creature.morale}
       </Text>

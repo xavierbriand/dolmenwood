@@ -58,9 +58,9 @@ describe('MortalMapper', () => {
       expect(result.attacks).toEqual(['Weapon (−1)']);
     });
 
-    it('should map movement', () => {
+    it('should map movement as a walk rate', () => {
       result = mapper.map(sampleInput);
-      expect(result.movement).toBe(40);
+      expect(result.movement).toEqual({ walk: 40 });
     });
 
     it('should map morale', () => {

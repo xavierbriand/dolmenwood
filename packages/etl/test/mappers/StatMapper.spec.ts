@@ -73,32 +73,59 @@ describe('StatMapper', () => {
   });
 
   describe('parseMovement', () => {
-    it('should parse simple speed as number', () => {
-      expect(parseMovement({ speed: '40' })).toBe(40);
+    it('should parse simple speed as walk rate', () => {
+      expect(parseMovement({ speed: '40' })).toEqual({ walk: 40 });
     });
 
-    it('should composite speed + fly as string', () => {
-      expect(parseMovement({ speed: '30', fly: '60' })).toBe('30 Fly 60');
+    it('should keep speed + fly as separate modes', () => {
+      expect(parseMovement({ speed: '30', fly: '60' })).toEqual({
+        walk: 30,
+        fly: 60,
+      });
     });
 
-    it('should composite speed + swim as string', () => {
-      expect(parseMovement({ speed: '40', swim: '40' })).toBe('40 Swim 40');
+    it('should keep speed + swim as separate modes', () => {
+      expect(parseMovement({ speed: '40', swim: '40' })).toEqual({
+        walk: 40,
+        swim: 40,
+      });
     });
 
-    it('should composite speed + burrow as string', () => {
-      expect(parseMovement({ speed: '60', burrow: '20' })).toBe('60 Burrow 20');
+    it('should keep speed + burrow as separate modes', () => {
+      expect(parseMovement({ speed: '60', burrow: '20' })).toEqual({
+        walk: 60,
+        burrow: 20,
+      });
     });
 
-    it('should handle fly-only as string', () => {
-      expect(parseMovement({ fly: '160' })).toBe('Fly 160');
+    it('should handle fly-only', () => {
+      expect(parseMovement({ fly: '160' })).toEqual({ fly: 160 });
     });
 
-    it('should handle swim-only as string', () => {
-      expect(parseMovement({ swim: '40' })).toBe('Swim 40');
+    it('should handle swim-only', () => {
+      expect(parseMovement({ swim: '40' })).toEqual({ swim: 40 });
     });
 
-    it('should handle webs as alternate movement', () => {
-      expect(parseMovement({ speed: '20', webs: '40' })).toBe('20 Webs 40');
+    it('should handle webs as an alternate mode', () => {
+      expect(parseMovement({ speed: '20', webs: '40' })).toEqual({
+        walk: 20,
+        webs: 40,
+      });
+    });
+
+    it('should split a "when mounted" qualifier into walk + mounted', () => {
+      expect(parseMovement({ speed: '30 (80 when mounted)' })).toEqual({
+        walk: 30,
+        mounted: 80,
+      });
+    });
+
+    it('should keep an unparseable rate verbatim in notes', () => {
+      expect(parseMovement({ speed: 'special' })).toEqual({ notes: 'special' });
+    });
+
+    it('should return an empty object when no rates are present', () => {
+      expect(parseMovement({})).toEqual({});
     });
   });
 
