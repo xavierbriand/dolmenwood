@@ -93,6 +93,18 @@ describe('<EncounterResult>', () => {
     expect(f).toContain('265 gp');
   });
 
+  it('shows a Saved badge only when saved', () => {
+    const { lastFrame: withoutBadge } = render(
+      <EncounterResult encounter={makeCreatureEncounter()} {...idle} />,
+    );
+    expect(withoutBadge()).not.toContain('SAVED');
+
+    const { lastFrame: withBadge } = render(
+      <EncounterResult encounter={makeCreatureEncounter()} {...idle} saved />,
+    );
+    expect(withBadge()).toContain('SAVED');
+  });
+
   it('renders a possessions line when present', () => {
     const { lastFrame } = render(
       <EncounterResult

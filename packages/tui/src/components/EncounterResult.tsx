@@ -1,11 +1,13 @@
 import { Box, Text } from 'ink';
-import { Spinner, StatusMessage } from '@inkjs/ui';
+import { Badge, Spinner, StatusMessage } from '@inkjs/ui';
 import type { Creature, Encounter, RolledTreasure } from '@dolmenwood/core';
 
 export interface EncounterResultProps {
   encounter: Encounter | null;
   loading: boolean;
   error: string | null;
+  /** Shows a "Saved" badge — set when the encounter was auto-saved to a session. */
+  saved?: boolean;
 }
 
 /** yellow when the players are surprised, magenta when both sides are. */
@@ -109,6 +111,7 @@ export function EncounterResult({
   encounter,
   loading,
   error,
+  saved = false,
 }: EncounterResultProps) {
   if (loading) {
     return <Spinner label="Rolling…" />;
@@ -124,7 +127,14 @@ export function EncounterResult({
 
   return (
     <Box flexDirection="column" borderStyle="round" paddingX={1}>
-      <Text bold>{encounter.summary}</Text>
+      <Box>
+        <Text bold>{encounter.summary}</Text>
+        {saved && (
+          <Box marginLeft={1}>
+            <Badge color="green">Saved</Badge>
+          </Box>
+        )}
+      </Box>
 
       <Text>
         <Text dimColor>Type: </Text>
