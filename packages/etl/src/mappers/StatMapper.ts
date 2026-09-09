@@ -5,6 +5,7 @@
  * The Python extractor (PyMuPDF) produces string values for all stat fields.
  * These functions convert them to the typed values expected by the core schema.
  */
+import type { Movement } from '@dolmenwood/core';
 
 /**
  * Raw stats shape as produced by the Python extractor.
@@ -20,6 +21,7 @@ export interface RawStats {
   swim?: string;
   burrow?: string;
   webs?: string;
+  climb?: string;
   morale: string;
   xp: string;
   encounters?: string;
@@ -99,8 +101,11 @@ export function parseAttacks(raw: string): string[] {
 }
 
 /**
- * Compose movement from separate speed/fly/swim/burrow/webs fields.
- * Returns a number when only speed is present, or a composite string otherwise.
+ * Build a structured {@link Movement} from the separate speed/fly/swim/burrow/
+ * webs/climb fields the extractor produces. Values are "40" or occasionally
+ * "30 (80 when mounted)"; the leading integer becomes the mode's rate and a
+ * "(N ... mounted)" qualifier becomes `mounted`. Anything left unparsed is
+ * kept verbatim in `notes` so no data is silently dropped.
  */
 export function parseMovement(stats: {
   speed?: string;
@@ -108,39 +113,54 @@ export function parseMovement(stats: {
   swim?: string;
   burrow?: string;
   webs?: string;
-}): number | string {
-  const parts: string[] = [];
+  climb?: string;
+}): Movement {
+  const movement: Movement = {};
+  const leftovers: string[] = [];
+
+  const rate = (raw: string | undefined): number | undefined => {
+    if (!raw) return undefined;
+    const match = raw.match(/\d+/);
+    if (!match) {
+      leftovers.push(raw.trim());
+      return undefined;
+    }
+    return Number(match[0]);
+  };
 
   if (stats.speed) {
-    parts.push(stats.speed);
-  }
-  if (stats.fly) {
-    parts.push(`Fly ${stats.fly}`);
-  }
-  if (stats.swim) {
-    parts.push(`Swim ${stats.swim}`);
-  }
-  if (stats.burrow) {
-    parts.push(`Burrow ${stats.burrow}`);
-  }
-  if (stats.webs) {
-    parts.push(`Webs ${stats.webs}`);
-  }
-
-  const composite = parts.join(' ');
-
-  // If only speed, return as number
-  if (
-    stats.speed &&
-    !stats.fly &&
-    !stats.swim &&
-    !stats.burrow &&
-    !stats.webs
-  ) {
-    return Number(stats.speed);
+    const walk = rate(stats.speed);
+    if (walk !== undefined) movement.walk = walk;
+    // A parenthetical qualifier such as "(80 when mounted)": pull the number
+    // when it is a mounted rate, otherwise keep the phrase in `notes`.
+    const paren = stats.speed.match(/\(([^)]*)\)/);
+    if (paren) {
+      const digits = paren[1].match(/\d+/);
+      if (/mounted/i.test(paren[1]) && digits) {
+        movement.mounted = Number(digits[0]);
+      } else {
+        leftovers.push(paren[1].trim());
+      }
+    }
   }
 
-  return composite;
+  const fly = rate(stats.fly);
+  if (fly !== undefined) movement.fly = fly;
+  const swim = rate(stats.swim);
+  if (swim !== undefined) movement.swim = swim;
+  const burrow = rate(stats.burrow);
+  if (burrow !== undefined) movement.burrow = burrow;
+  const webs = rate(stats.webs);
+  if (webs !== undefined) movement.webs = webs;
+  const climb = rate(stats.climb);
+  if (climb !== undefined) movement.climb = climb;
+
+  const notes = leftovers.filter(Boolean).join('; ');
+  if (notes) {
+    movement.notes = notes;
+  }
+
+  return movement;
 }
 
 /**

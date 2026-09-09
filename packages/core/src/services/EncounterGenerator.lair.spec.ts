@@ -140,7 +140,7 @@ function buildCreature(overrides: Partial<Creature> = {}): Creature {
     xp: 10,
     numberAppearing: '1d4',
     armourClass: 10,
-    movement: 30,
+    movement: { walk: 30 },
     hitDice: '1d6',
     attacks: ['Claw'],
     morale: 7,

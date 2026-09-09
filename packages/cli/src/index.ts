@@ -10,6 +10,7 @@ import {
   SessionService,
   GenerationContext,
   TreasureGenerator,
+  formatMovement,
 } from '@dolmenwood/core';
 import {
   YamlTableRepository,
@@ -172,7 +173,7 @@ program
         const c = encounter.details.creature;
         console.log(chalk.bold.cyan(c.name));
         console.log(
-          `${chalk.dim('Stats:')} AC ${c.armourClass}, HD ${c.hitDice}, MV ${c.movement}, Morale ${c.morale}`,
+          `${chalk.dim('Stats:')} AC ${c.armourClass}, HD ${c.hitDice}, MV ${formatMovement(c.movement)}, Morale ${c.morale}`,
         );
         console.log(`${chalk.dim('Attacks:')} ${c.attacks.join(', ')}`);
 

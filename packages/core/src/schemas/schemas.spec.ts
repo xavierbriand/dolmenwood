@@ -1,7 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { CreatureSchema, EncounterTypeSchema } from './encounter.js';
 import { RegionTableSchema } from './tables.js';
-import { DTableEntrySchema, AbilitySchema } from './creature.js';
+import {
+  DTableEntrySchema,
+  AbilitySchema,
+  MovementSchema,
+  MovementLike,
+  formatMovement,
+} from './creature.js';
 
 describe('Encounter Schemas', () => {
   it('should validate a correct creature object', () => {
@@ -12,7 +18,7 @@ describe('Encounter Schemas', () => {
       xp: 10,
       numberAppearing: '1d6',
       armourClass: 7,
-      movement: 90,
+      movement: { walk: 90 },
       hitDice: '1d6',
       attacks: ['1 x weapon (1d6)'],
       morale: 7,
@@ -29,7 +35,7 @@ describe('Encounter Schemas', () => {
       xp: 50,
       numberAppearing: '1d4',
       armourClass: 14,
-      movement: 30,
+      movement: { walk: 30 },
       hitDice: '3d8',
       attacks: ['1 x sword (1d8)'],
       morale: 9,
@@ -50,7 +56,7 @@ describe('Encounter Schemas', () => {
       xp: 10,
       numberAppearing: '1d6',
       armourClass: 11,
-      movement: 40,
+      movement: { walk: 40 },
       hitDice: '1d8',
       attacks: ['1 x gore (1d6)'],
       morale: 7,
@@ -70,7 +76,7 @@ describe('Encounter Schemas', () => {
       xp: 10,
       numberAppearing: '1d6',
       // armourClass: 7, // Missing
-      movement: 90,
+      movement: { walk: 90 },
       hitDice: '1d6',
       attacks: ['1 x weapon (1d6)'],
       morale: 7,
@@ -92,7 +98,7 @@ describe('Encounter Schemas', () => {
       xp: 10,
       numberAppearing: '2d6',
       armourClass: 15,
-      movement: 20,
+      movement: { walk: 20 },
       hitDice: '1d8',
       attacks: ['Weapon (+0)'],
       morale: 7,
@@ -102,7 +108,7 @@ describe('Encounter Schemas', () => {
           level: 3,
           xp: 40,
           armourClass: 17,
-          movement: 20,
+          movement: { walk: 20 },
           hitDice: '3d8',
           attacks: ['Weapon (+2)'],
           morale: 8,
@@ -113,7 +119,7 @@ describe('Encounter Schemas', () => {
           level: 5,
           xp: 260,
           armourClass: 19,
-          movement: 20,
+          movement: { walk: 20 },
           hitDice: '5d8',
           attacks: ['Weapon (+3)'],
           morale: 9,
@@ -133,7 +139,7 @@ describe('Encounter Schemas', () => {
       xp: 20,
       numberAppearing: '1d4',
       armourClass: 12,
-      movement: 40,
+      movement: { walk: 40 },
       hitDice: '2d6',
       attacks: ['1 x spell (1d6)'],
       morale: 6,
@@ -199,7 +205,7 @@ describe('Creature Schema (enrichment fields)', () => {
     xp: 300,
     numberAppearing: '1d4',
     armourClass: 16,
-    movement: 40,
+    movement: { walk: 40 },
     hitDice: '5d8',
     attacks: ['1 x claw (1d8)'],
     morale: 9,
@@ -362,5 +368,78 @@ describe('Table Schemas', () => {
     };
     const result = RegionTableSchema.safeParse(invalidTable);
     expect(result.success).toBe(false);
+  });
+});
+
+describe('MovementSchema', () => {
+  it('accepts an empty movement (unknown rate)', () => {
+    expect(MovementSchema.safeParse({}).success).toBe(true);
+  });
+
+  it('accepts every mode plus mounted and notes', () => {
+    const result = MovementSchema.safeParse({
+      walk: 30,
+      fly: 60,
+      swim: 40,
+      burrow: 20,
+      climb: 20,
+      webs: 40,
+      mounted: 80,
+      notes: 'half speed in undergrowth',
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects a non-numeric rate', () => {
+    expect(MovementSchema.safeParse({ walk: 'fast' }).success).toBe(false);
+  });
+});
+
+describe('MovementLike (legacy coercion)', () => {
+  it('upgrades a bare number to a walk rate', () => {
+    expect(MovementLike.parse(40)).toEqual({ walk: 40 });
+  });
+
+  it('upgrades a numeric string to a walk rate', () => {
+    expect(MovementLike.parse('40')).toEqual({ walk: 40 });
+  });
+
+  it('keeps a non-numeric legacy string as notes', () => {
+    expect(MovementLike.parse("120' (fly)")).toEqual({ notes: "120' (fly)" });
+  });
+
+  it('passes a already-structured movement through untouched', () => {
+    expect(MovementLike.parse({ walk: 30, fly: 60 })).toEqual({
+      walk: 30,
+      fly: 60,
+    });
+  });
+});
+
+describe('formatMovement', () => {
+  it('renders a bare walk rate as the number', () => {
+    expect(formatMovement({ walk: 30 })).toBe('30');
+  });
+
+  it('labels each non-walk mode', () => {
+    expect(formatMovement({ walk: 30, fly: 60 })).toBe('30 Fly 60');
+    expect(formatMovement({ swim: 40 })).toBe('Swim 40');
+    expect(formatMovement({ walk: 20, burrow: 20, webs: 40 })).toBe(
+      '20 Burrow 20 Webs 40',
+    );
+  });
+
+  it('renders a mounted rate in parentheses', () => {
+    expect(formatMovement({ walk: 30, mounted: 80 })).toBe('30 (80 mounted)');
+  });
+
+  it('appends free-text notes', () => {
+    expect(formatMovement({ walk: 30, notes: 'climbs sheer walls' })).toBe(
+      '30 climbs sheer walls',
+    );
+  });
+
+  it('renders an em dash when the rate is unknown', () => {
+    expect(formatMovement({})).toBe('—');
   });
 });

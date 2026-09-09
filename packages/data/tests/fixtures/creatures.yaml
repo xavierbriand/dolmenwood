@@ -4,7 +4,8 @@
   xp: 10
   numberAppearing: 2d6
   armourClass: 11
-  movement: 20
+  movement:
+    walk: 20
   hitDice: 1d6
   attacks:
     - Club (+0)

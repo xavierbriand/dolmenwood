@@ -56,9 +56,9 @@ describe('AnimalMapper', () => {
       expect(result.attacks).toEqual(['Bite (+1, 1d6)']);
     });
 
-    it('should map movement as number', () => {
+    it('should map movement as a walk rate', () => {
       result = mapper.map(sampleInput);
-      expect(result.movement).toBe(30);
+      expect(result.movement).toEqual({ walk: 30 });
     });
 
     it('should map morale', () => {
@@ -121,13 +121,13 @@ describe('AnimalMapper', () => {
   });
 
   describe('given an animal with composite movement', () => {
-    it('should compose speed + fly', () => {
+    it('should keep speed + fly as separate modes', () => {
       const input = {
         ...sampleInput,
         stats: { ...sampleInput.stats, speed: '10', fly: '60' },
       };
       const result = mapper.map(input);
-      expect(result.movement).toBe('10 Fly 60');
+      expect(result.movement).toEqual({ walk: 10, fly: 60 });
     });
 
     it('should handle fly-only', () => {
@@ -141,7 +141,7 @@ describe('AnimalMapper', () => {
       };
       delete (input.stats as Record<string, unknown>)['speed'];
       const result = mapper.map(input);
-      expect(result.movement).toBe('Fly 50');
+      expect(result.movement).toEqual({ fly: 50 });
     });
   });
 

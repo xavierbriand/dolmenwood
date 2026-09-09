@@ -61,7 +61,7 @@ describe('EncounterGenerator Integration', () => {
       xp: 10,
       numberAppearing: '2d4',
       armourClass: 12,
-      movement: 30,
+      movement: { walk: 30 },
       hitDice: '1d6',
       attacks: ['club'],
       morale: 7,
