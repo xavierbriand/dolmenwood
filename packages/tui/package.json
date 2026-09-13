@@ -23,11 +23,11 @@
     "@dolmenwood/data": "workspace:*",
     "@inkjs/ui": "^2.0.0",
     "ink": "^5.2.1",
-    "react": "^18.3.1"
+    "react": "^19.3.0"
   },
   "devDependencies": {
     "@types/node": "^25.3.5",
-    "@types/react": "^18.3.12",
+    "@types/react": "^19.3.0",
     "ink-testing-library": "^4.0.0",
     "typescript": "^5.3.3",
     "vitest": "^4.0.18"
