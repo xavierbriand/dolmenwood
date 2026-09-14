@@ -2,7 +2,8 @@
 title: 'Creature Enrichment & Treasure Resolution'
 slug: 'creature-enrichment-and-treasure'
 created: '2026-02-12'
-status: 'draft'
+revised: '2026-09-14'
+status: 'complete'
 tech_stack:
   - Python (PyMuPDF/fitz)
   - TypeScript
@@ -474,3 +475,17 @@ A3 depends on A1+A2. B3 depends on B2. B4 depends on B2+B3. B6 depends on A3+B4.
 1. **Garbled treasure values** — ✅ Fix via Python extractor. PyMuPDF can precisely identify the `Hoard` bold label boundary, fixing the 2 corrupted treasure strings at the source.
 2. **Magic item detail depth** — ✅ Full depth. Roll all the way to specific items (e.g., "Aethers of Starlight") with values and summaries. The tables are finite and already being extracted.
 3. **Possessions vs Hoard distinction** — ✅ Context-dependent. Roll possessions for wandering encounters and hoard for lair encounters (30% base lair chance per encounter rules).
+
+## Completion Status
+
+Both workstreams are implemented and merged.
+
+**Workstream A (Creature Enrichment):** `packages/etl/scripts/extract_dmb.py` extracts the full stat block via PyMuPDF font detection; `CreatureSchema` carries `behaviour`, `speech`, `possessions`, `creatureAbilities`, `sections` (the traits/encounters/lairs d-tables, keyed by heading), and `names`. The old pdf-parse processors (Normalizer, Chunker, PageMerger, the Slicers/Splitters, the Stat Parsers) are fully retired — `packages/etl/src/mappers/` now holds only the four PyMuPDF-fed mappers (`BestiaryMapper`, `AnimalMapper`, `MortalMapper`, `AdventurerMapper`) plus `StatMapper`. `assets/creatures.yaml` loads **158 creatures**.
+
+**Workstream B (Treasure Resolution):** `packages/etl/scripts/extract_dcb_treasure.py`, `packages/core/src/schemas/treasure.ts` (`TreasureTablesSchema`, `RolledTreasureSchema`, etc.), `TreasureCodeParser`, `TreasureGenerator.rollHoard()`, and the `TreasureTableRepository` port are all in place; `EncounterGenerator` rolls a hoard for lair encounters and possessions for wandering ones.
+
+**Divergences from this plan's sketch** (implementation detail changed, intent didn't):
+- Traits/Encounters/Lairs d-tables landed as one `sections: Record<string, DTableEntry[]>` field instead of three separate `traits`/`encounterSeeds`/`lairSeeds` arrays — the DMB's per-creature heading names vary, so a keyed record fit better than three fixed arrays.
+- `names` is a single free-text string (as printed on the page), not a parsed `string[]`.
+- The treasure-table adapter is `JsonTreasureTableRepository` reading `assets/treasure-tables.json` (symlinked from ETL JSON output), not a `YamlTreasureTableRepository` reading a hand-converted YAML file — no format conversion step was needed.
+- Also landed as part of this work, not originally scoped here: structured `Movement` (`packages/core/src/schemas/creature.ts`), replacing a `number | string` union that could silently drop a creature on a non-numeric speed value.
