@@ -2,8 +2,8 @@
 title: 'Dolmenwood Encounter Generator'
 slug: 'dolmenwood-encounter-generator'
 created: 'Sat Feb 07 2026'
-revised: '2026-02-12'
-status: 'in-progress'
+revised: '2026-09-14'
+status: 'complete'
 stepsCompleted: [1, 2, 3, 4, 5, 6]
 tech_stack: ['Node.js', 'TypeScript', 'YAML', 'commander', 'zod', 'vitest']
 code_patterns:
@@ -20,7 +20,7 @@ test_patterns: ['Unit Tests (Vitest)', 'Mock RNG', 'BDD-style describe/it']
 # Tech-Spec: Dolmenwood Encounter Generator
 
 **Created:** Sat Feb 07 2026
-**Revised:** 2026-02-12
+**Revised:** 2026-09-14 — superseded by the TUI plan and subsequent fixes; see the "Revision note" at the end.
 
 ## Overview
 
@@ -63,13 +63,16 @@ A Node.js/TypeScript core library handling nested probability tables and dice lo
 
 @dolmenwood/cli     Primary adapter (driving).
   ├── commands/     session
-  ├── services/     InteractiveService
-  └── index.ts      Commander CLI entry point
+  └── index.ts      Commander CLI entry point; no-args delegates to @dolmenwood/tui
+
+@dolmenwood/tui     Primary adapter (driving) — Ink terminal UI, the default
+                    interactive mode. Replaced the old inquirer-based
+                    InteractiveService entirely (see plan-tui-ink.md).
 
 @dolmenwood/etl     ETL pipeline (separate concern, see tech-spec-dmb-creature-etl-pipeline.md)
 ```
 
-**Dependency Rule:** `CLI -> Data -> Core`. Core knows nothing of the outer world.
+**Dependency Rule:** `CLI / TUI -> Data -> Core`. Core knows nothing of the outer world.
 
 ### Data Files (assets/)
 
@@ -77,7 +80,8 @@ The `assets/` directory contains symlinks to ETL-generated outputs and hand-auth
 
 | File                       | Type    | Description                                                                  |
 | -------------------------- | ------- | ---------------------------------------------------------------------------- |
-| `creatures.yaml`           | Symlink | 149 creatures with stats, variants, factions (-> etl/output/load/creatures/) |
+| `creatures.yaml`           | Symlink | 158 creatures with stats, variants, factions, enrichment fields, treasure (-> etl/output/load/creatures/) |
+| `treasure-tables.json`     | Symlink | DCB hoard/gem/art/magic-item tables, rolled by `TreasureGenerator` (-> etl/output/load/treasure-tables/) |
 | `encounter-types.yaml`     | Local   | 4 encounter type tables (Day/Night x Road/Wild/Fire/NoFire)                  |
 | `common-encounters.yaml`   | Local   | Common sub-tables (Animal, Monster, Mortal, Sentient)                        |
 | `regional-encounters.yaml` | Local   | Region-specific encounter tables                                             |
@@ -165,39 +169,36 @@ Recursion guard: depth > 10 throws error.
 - `session` command in CLI (set/get region, time, terrain, camping)
 - 2 tests
 
-### Task 7: CLI Commands -- PARTIAL
+### Task 7: CLI Commands -- COMPLETE
 
 **Implemented:**
 
-- `session` command with interactive prompts (InteractiveService)
-- Basic CLI scaffolding with Commander
+- `encounter <region>` command (calls `EncounterGenerator`, displays formatted result with chalk styling)
+- `session` command (set/get region, time, terrain, camping)
+- No-args invocation delegates to `@dolmenwood/tui` — the Ink terminal UI, not the old `inquirer`-based `InteractiveService` (deleted; see `plan-tui-ink.md`)
 
-**Not yet implemented:**
+**Not built (superseded, not pursued):**
 
-- [ ] `generate` command (calls EncounterGenerator, displays formatted result)
-- [ ] `travel <hex>` shortcut command
-- [ ] `time <set>` shortcut command
-- [ ] `camp` toggle command
-- [ ] `--debug` flag showing raw dice rolls and table paths
+- `travel <hex>` / `time <set>` / `camp` shortcut commands — the TUI's encounter form and `session` command cover this instead
+- `--debug` flag / raw-roll pretty-printer — no demand surfaced once the TUI shipped full stat blocks
 
-### Task 8: Error Handling & Logging -- NOT STARTED
-
-- [ ] Pretty-printer for Zod validation errors
-- [ ] Debug logger with `--debug` flag
-- [ ] Chalk styling for CLI output
-
-### Task 9: CI & Documentation -- PARTIAL
+### Task 8: Error Handling & Logging -- PARTIAL
 
 **Implemented:**
 
-- Pre-commit hook for IP compliance (ip-check.ts)
-- pnpm audit and eslint-plugin-security
-- AGENTS.md with full development guidelines
+- Chalk styling throughout CLI output (`packages/cli/src/index.ts`)
+- `Result<T, E>` success/failure everywhere in `core`; failures surface as readable messages in both CLI and TUI
 
-**Not yet implemented:**
+**Not built:**
 
-- [ ] GitHub Actions CI workflow for tests
-- [ ] User-facing documentation (README, YAML editing guide)
+- [ ] Pretty-printer for raw Zod validation errors (currently just `.message`)
+- [ ] `--debug` flag showing dice rolls and table paths
+
+### Task 9: CI & Documentation -- COMPLETE
+
+- GitHub Actions CI (`.github/workflows/ci.yml`) — build, lint, test, `pnpm audit --prod` (blocking) + informational audit, `pip-audit`
+- Pre-commit hook for IP compliance (`scripts/ip-check.ts`)
+- `README.md`, `PROJECT.md`, `CLAUDE.md`, `.claude/rules/*.md` — current dev-harness docs (superseded the old `AGENTS.md`)
 
 ## Acceptance Criteria
 
@@ -205,26 +206,26 @@ Recursion guard: depth > 10 throws error.
 - [x] AC 2: Nested table resolution (Encounter Type -> Common sub-table -> Creature)
 - [x] AC 3: Session state persists across CLI restarts
 - [x] AC 4: Invalid YAML data produces clear Zod validation errors
-- [ ] AC 5: Debug mode shows raw dice rolls and table selection paths
+- [ ] AC 5: Debug mode shows raw dice rolls and table selection paths — not built (see Task 8)
 
 ## Known Limitations
 
-1. **"Adventuring Party" encounters** are not yet supported. The encounter table references "Adventuring Party" as a creature, but it's actually a multi-step generation procedure. See `plan-adventuring-party-generation.md` for the implementation plan.
+1. **"Adventuring Party" encounters** are not yet supported. The `Common - Mortal` table references "Adventuring Party" as a creature, but it's actually a multi-step generation procedure. See `plan-adventuring-party-generation.md` for the implementation plan. Still open.
 
-2. **"Elf-Courtier or Knight"** in the Sentient table is a compound reference that the generator does not yet handle (it would fail on creature lookup).
+2. **Dungeon-context encounters.** `EncounterGenerator` hardcodes the Outdoors 30 ft distance roll (`EncounterGenerator.ts`) — `GenerationContext` has no Dungeon/indoor variant and there's no dungeon content in the project yet. New limitation, not in the original spec.
 
-3. **No `generate` CLI command** yet. The core generator logic works but there's no CLI command wired up to invoke it and display results.
+3. **No region-specific table overrides** have been tested against the full DCB region set — only a handful of hand-authored regional tables exist today. The fallback mechanism in code is exercised in production (TUI + CLI) but DCB's remaining regions aren't extracted; see `plan-dcb-encounter-table-extraction.md`.
 
-4. **No region-specific table overrides** have been tested with real data. The fallback mechanism exists in code but the YAML data files may not have localized variants for all common tables.
+Resolved since the original spec: the `generate`/`encounter` CLI command shipped, and the "Elf-Courtier or Knight" compound reference now resolves (encounter table entry converted to an array `ref`, matching `TableEntrySchema`'s `string | string[]`).
 
 ## Dependencies
 
 - `commander`: CLI framework
-- `inquirer`: Interactive prompts
 - `js-yaml`: YAML parser
 - `zod`: Schema validation
-- `chalk`: Terminal styling (used in ETL, not yet in CLI)
+- `chalk`: Terminal styling (CLI and ETL)
 - `vitest`: Testing framework
+- `ink` + `react` + `@inkjs/ui` (in `@dolmenwood/tui`): the interactive layer — replaced `inquirer`, which is no longer a dependency anywhere in the workspace
 
 ## Testing Strategy
 
@@ -235,11 +236,14 @@ Recursion guard: depth > 10 throws error.
 
 ## Next Steps
 
-See `plan-adventuring-party-generation.md` for the next major feature.
+See `plan-adventuring-party-generation.md` for the next major feature. Also open: `plan-dcb-encounter-table-extraction.md` and `plan-dcb-hex-data-extraction.md` (Campaign Book content), and dungeon-context distance rolls (Known Limitation 2, no plan doc yet).
 
-For the encounter generator itself:
+## Revision note (2026-09-14)
 
-1. Wire up the `generate` CLI command
-2. Add `--debug` output
-3. Handle compound creature references ("Elf-Courtier or Knight")
-4. Add GitHub Actions CI
+This spec described the project as of Task 6. Since then: the TUI plan
+(`plan-tui-ink.md`) shipped and replaced the CLI's `InteractiveService`, the
+creature-enrichment/treasure plan shipped in full, and the `generate` command
+and CI landed. Statuses and limitations above are updated in place rather than
+left stale; treat this doc as a historical design record for the parts that
+haven't changed (schemas, generation flow, package boundaries) and the
+"Revised" sections above for current state.
